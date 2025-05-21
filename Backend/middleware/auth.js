@@ -40,9 +40,7 @@ const authorize = (...roles) => {
     // Check if the user's role name is in the allowed roles
     if (!roles.includes(req.user.role.name)) {
       return res.status(403).json({ 
-        message: `User role ${req.user.role.name} is not authorized to access this route`,
-        userRole: req.user.role.name,
-        allowedRoles: roles
+        message: `Role ${req.user.role.name} is not authorized to access this route`
       });
     }
     next();

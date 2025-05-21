@@ -19,6 +19,8 @@ const dashboardRoutes = require("./dashboardRoutes");
 const profileRoutes = require("./profileRoutes");
 const reclamationRoutes = require('./reclamationRoutes');
 const besoinRoutes = require('./besoinRoutes');
+const panneRoutes = require('./panneRoutes');
+const panneTypeRoutes = require('./panneTypeRoutes');
 
 const router = express.Router();
 console.log("📌 Index routes file is loaded");
@@ -43,5 +45,7 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/profile", profileRoutes);
 router.use('/reclamations', reclamationRoutes);
 router.use('/besoins', besoinRoutes);
+router.use('/pannes', panneRoutes);
+router.use('/panne-types', panneTypeRoutes);
 
 module.exports = router; 

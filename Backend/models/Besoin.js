@@ -31,11 +31,6 @@ const besoinSchema = new mongoose.Schema({
     required: [true, 'La quantité est requise'],
     min: [1, 'La quantité doit être supérieure à 0']
   },
-  estimatedCost: {
-    type: Number,
-    required: [true, 'Le coût estimé est requis'],
-    min: [0, 'Le coût ne peut pas être négatif']
-  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Signup',

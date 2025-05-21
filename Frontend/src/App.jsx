@@ -45,6 +45,7 @@ import { Toaster } from "react-hot-toast";
 import DepartmentRequests from "./routes/DepartmentReclamations/DepartmentRequests";
 import AddBesoin from "./routes/DepartmentReclamations/AddBesoin";
 import DepartmentBesoins from "./routes/DepartmentReclamations/DepartmentBesoins";
+import DepartmentEquipment from "./routes/DepartmentReclamations/DepartmentEquipment";
 
 function App() {
   return (
@@ -77,6 +78,7 @@ function App() {
             <Route path="/department/:department/reclamations/add" element={<AddReclamation />} />
             <Route path="/department/:department/besoins" element={<DepartmentBesoins />} />
             <Route path="/department/:department/besoins/add" element={<AddBesoin />} />
+            <Route path="/department/:department/equipment" element={<DepartmentEquipment />} />
           </Route>
 
           {/* Admin-only Routes */}

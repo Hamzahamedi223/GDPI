@@ -58,3 +58,24 @@ exports.deleteEquipment = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getEquipmentByDepartment = async (req, res) => {
+  try {
+    const departmentName = req.params.department;
+    const equipment = await Equipment.find()
+      .populate({
+        path: "department",
+        match: { name: departmentName }
+      })
+      .populate("model")
+      .populate("categorie")
+      .populate("fournisseur");
+
+    // Filter out equipment where department is null (due to the match condition)
+    const filteredEquipment = equipment.filter(item => item.department !== null);
+    
+    res.json(filteredEquipment);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

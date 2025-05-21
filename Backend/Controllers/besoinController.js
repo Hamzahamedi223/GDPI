@@ -55,7 +55,7 @@ exports.getDepartmentBesoins = async (req, res) => {
 // Create a new besoin
 exports.createBesoin = async (req, res) => {
   try {
-    const { title, description, priority, quantity, estimatedCost } = req.body;
+    const { title, description, priority, quantity } = req.body;
     const { department } = req.params;
 
     // Find department by name
@@ -64,7 +64,7 @@ exports.createBesoin = async (req, res) => {
       return res.status(404).json({ message: 'Department not found' });
     }
 
-    if (!title || !description || !quantity || !estimatedCost) {
+    if (!title || !description || !quantity) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -78,7 +78,6 @@ exports.createBesoin = async (req, res) => {
       description,
       priority: priority || 'medium',
       quantity,
-      estimatedCost,
       department: departmentDoc._id,
       createdBy: req.user._id
     });

@@ -6,7 +6,7 @@ const ProtectedRoute = ({ children, adminOnly = false, departmentOnly = false, s
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user_data"));
   const isAdmin = user?.role?.name === "admin";
-  const isChefDepartment = user?.role?.name === "chef department";
+  const isChefService = user?.role?.name === "chef service";
   const userDepartment = user?.department?.name;
   const hasScanningAccess = user?.scanning_access === true;
 
@@ -14,7 +14,7 @@ const ProtectedRoute = ({ children, adminOnly = false, departmentOnly = false, s
   console.log("User Department:", userDepartment || "No department found");
   console.log("Accessing Page:", location.pathname);
   console.log("Is Admin:", isAdmin);
-  console.log("Is Chef Department:", isChefDepartment);
+  console.log("Is Chef Service:", isChefService);
   console.log("Has Scanning Access:", hasScanningAccess);
   console.log("Route Requires Admin:", adminOnly);
   console.log("Route Requires Department:", departmentOnly);
@@ -30,7 +30,7 @@ const ProtectedRoute = ({ children, adminOnly = false, departmentOnly = false, s
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (departmentOnly && (!isChefDepartment || !userDepartment)) {
+  if (departmentOnly && (!isChefService || !userDepartment)) {
     console.log("Access denied: User not authorized for department-specific route");
     return <Navigate to="/dashboard" replace />;
   }

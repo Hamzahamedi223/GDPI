@@ -7,11 +7,11 @@ const { protect, authorize } = require('../middleware/auth');
 router.get('/', protect, authorize('admin'), reclamationController.getAllReclamations);
 
 // Department-specific routes
-router.get('/department/:department', protect, authorize('chef department', 'admin'), reclamationController.getDepartmentReclamations);
-router.post('/department/:department', protect, authorize('chef department', 'admin'), reclamationController.createReclamation);
+router.get('/department/:department', protect, authorize('chef service', 'admin'), reclamationController.getDepartmentReclamations);
+router.post('/department/:department', protect, authorize('chef service', 'admin'), reclamationController.createReclamation);
 
 // Individual reclamation routes
-router.put('/:id', protect, authorize('chef department', 'admin'), reclamationController.updateReclamation);
-router.delete('/:id', protect, authorize('chef department', 'admin'), reclamationController.deleteReclamation);
+router.put('/:id', protect, authorize('chef service', 'admin'), reclamationController.updateReclamation);
+router.delete('/:id', protect, authorize('chef service', 'admin'), reclamationController.deleteReclamation);
 
 module.exports = router; 
