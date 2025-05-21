@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/theme-context";
 import ProtectedRoute from "./contexts/ProtectedRoute";
-import Products from "./routes/Equipments/Products";
 import Layout from "@/routes/layout";
 import DashboardPage from "./routes/dashboard/page";
 import Users from "./routes/Users/Users";
@@ -86,7 +85,6 @@ function App() {
             <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
             <Route path="/dashboard/users" element={<Users />} />
             <Route path="/dashboard/roles" element={<Roles />} />
-            <Route path="/dashboard/products" element={<Products />} />
             <Route path="/dashboard/new-product" element={<Equipments />} />
             <Route path="/dashboard/categorie" element={<Categorie />} />
             <Route path="/dashboard/model" element={<Model />} />

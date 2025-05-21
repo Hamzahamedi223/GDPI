@@ -162,11 +162,7 @@ import {
       {
           title: "Gestion des Équipements",
           links: [
-              {
-                  label: "Equipments",
-                  icon: Package,
-                  path: "/dashboard/products",
-              },
+          
               {
                   label: "Nouveau Equipment",
                   icon: PackagePlus,
