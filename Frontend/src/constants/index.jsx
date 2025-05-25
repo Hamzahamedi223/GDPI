@@ -194,7 +194,7 @@ import {
                   path: "/dashboard/department",
               },
               {
-                  label: "Pannes (À faire)",
+                  label: "Pannes ",
                   icon: FileWarning,
                   path: "/dashboard/pannes",
               },
@@ -203,11 +203,7 @@ import {
                   icon: Wrench, 
                   path: "/dashboard/internal-repair",
               },
-              {
-                  label: "Réformes (À faire)",
-                  icon: RefreshCw,
-                  path: "/dashboard/reformes",
-              },
+         
           ],
       },
       {
@@ -223,11 +219,7 @@ import {
                   icon: Truck, 
                   path: "/dashboard/fournisseur",
               },
-              {
-                  label: "Devis(À faire)",
-                  icon: FileSignature,  
-                  path: "/dashboard/devis",
-              },
+           
           ],
       },
       {
@@ -238,11 +230,7 @@ import {
                   icon: Truck, 
                   path: "/dashboard/delivery-orders",
               },
-              {
-                  label: "Détails Bons de Livraison (À faire)",
-                  icon: FileEdit,
-                  path: "/dashboard/delivery-order-details",
-              },
+          
               {
                   label: "Fiches de Sortie",
                   icon: ArrowRightToLine, 

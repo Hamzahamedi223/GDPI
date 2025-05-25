@@ -5,7 +5,6 @@ import { Plus, AlertCircle, FileText, Calendar, Edit2, Trash2, Download, Filter,
 
 const ExitForm = () => {
   const [exitForms, setExitForms] = useState([]);
-  const [fournisseurs, setFournisseurs] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -15,29 +14,46 @@ const ExitForm = () => {
   const [formData, setFormData] = useState({
     reference: "",
     date: "",
-    fournisseur: "",
-    equipment: "",
-    document: null,
-    status: "pending"
+    description: "",
+    equipment: [],
+    document: null
   });
   const [formErrors, setFormErrors] = useState({});
-  const [selectedFournisseur, setSelectedFournisseur] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [newEquipment, setNewEquipment] = useState("");
   const [showEquipmentModal, setShowEquipmentModal] = useState(false);
   const [selectedFormEquipment, setSelectedFormEquipment] = useState([]);
+  const [selectedFormDetails, setSelectedFormDetails] = useState(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [showEquipmentSelectionModal, setShowEquipmentSelectionModal] = useState(false);
+  const [isCreateForm, setIsCreateForm] = useState(false);
+  const [previousEquipmentSelection, setPreviousEquipmentSelection] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [formsRes, fournRes] = await Promise.all([
+        const [formsRes, equipmentRes] = await Promise.all([
           axios.get("http://localhost:5000/api/exit-forms"),
-          axios.get("http://localhost:5000/api/fournisseurs")
+          axios.get("http://localhost:5000/api/equipment")
         ]);
 
-        setExitForms(formsRes.data);
-        setFournisseurs(fournRes.data.fournisseurs);
+        // Ensure equipment data is properly structured and populated
+        const formattedForms = formsRes.data.map(form => ({
+          ...form,
+          equipment: Array.isArray(form.equipment) ? form.equipment.map(eq => ({
+            ...eq,
+            name: eq.name || 'N/A',
+            description: eq.description || 'N/A',
+            serial_number: eq.serial_number || 'N/A',
+            status: eq.status || 'N/A',
+            location: eq.location || 'N/A',
+            category: eq.category || 'N/A'
+          })) : []
+        }));
+
+        setExitForms(formattedForms);
+        setEquipment(equipmentRes.data);
       } catch (err) {
+        console.error("Error fetching data:", err);
         setError("Erreur lors du chargement des données");
       } finally {
         setLoading(false);
@@ -46,23 +62,12 @@ const ExitForm = () => {
     fetchData();
   }, []);
 
-  const handleAddEquipment = () => {
-    if (newEquipment.trim()) {
-      setEquipment([...equipment, newEquipment.trim()]);
-      setNewEquipment("");
-    }
-  };
-
-  const handleRemoveEquipment = (index) => {
-    setEquipment(equipment.filter((_, i) => i !== index));
-  };
-
   const validateForm = () => {
     const errors = {};
     if (!formData.reference) errors.reference = "Référence requise";
     if (!formData.date) errors.date = "Date requise";
-    if (!formData.fournisseur) errors.fournisseur = "Fournisseur requis";
-    if (equipment.length === 0) errors.equipment = "Au moins un équipement est requis";
+    if (!formData.description) errors.description = "Description requise";
+    if (formData.equipment.length === 0) errors.equipment = "Au moins un équipement est requis";
     if (!formData.document && !selectedForm) errors.document = "Document requis";
 
     setFormErrors(errors);
@@ -72,42 +77,25 @@ const ExitForm = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found; user not authorized.");
+      setError("Erreur d'autorisation (token manquant)");
+      return;
+    }
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("reference", formData.reference);
       formDataToSend.append("date", formData.date);
-      formDataToSend.append("fournisseur", formData.fournisseur);
-      formDataToSend.append("equipment", JSON.stringify(equipment));
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("equipment", JSON.stringify(formData.equipment));
       formDataToSend.append("status", formData.status);
       if (formData.document) {
         formDataToSend.append("document", formData.document);
       }
-
-      const response = await axios.post("http://localhost:5000/api/exit-forms", formDataToSend, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
-
-      const fournisseur = fournisseurs.find(f => f._id === formData.fournisseur);
-      
-      const newForm = {
-        ...response.data,
-        fournisseur: fournisseur
-      };
-
-      setExitForms([newForm, ...exitForms]);
-      
-      setFormData({
-        reference: "",
-        date: "",
-        fournisseur: "",
-        document: null,
-        status: "pending"
-      });
-      setEquipment([]);
-      setNewEquipment("");
+      const response = await axios.post("http://localhost:5000/api/exit-forms", formDataToSend, { headers: { "Content-Type": "multipart/form-data", Authorization: "Bearer " + token } });
+      setExitForms([response.data, ...exitForms]);
+      setFormData({ reference: "", date: "", description: "", equipment: [], document: null, status: "pending" });
     } catch (err) {
       console.error("Error creating exit form:", err);
       setError(err.response?.data?.error || "Erreur lors de la création de la fiche de sortie");
@@ -116,33 +104,25 @@ const ExitForm = () => {
 
   const handleUpdate = async () => {
     if (!validateForm()) return;
-
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found; user not authorized.");
+      setError("Erreur d'autorisation (token manquant)");
+      return;
+    }
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("reference", formData.reference);
       formDataToSend.append("date", formData.date);
-      formDataToSend.append("fournisseur", formData.fournisseur);
-      formDataToSend.append("equipment", JSON.stringify(equipment));
+      formDataToSend.append("description", formData.description || '');
+      formDataToSend.append("equipment", JSON.stringify(formData.equipment));
       formDataToSend.append("status", formData.status);
       if (formData.document) {
-        formDataToSend.append("document", formData.document);
+         formDataToSend.append("document", formData.document);
       }
-
-      await axios.put(
-        `http://localhost:5000/api/exit-forms/${selectedForm._id}`,
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data"
-          }
-        }
-      );
-
-      const updatedForm = await axios.get(`http://localhost:5000/api/exit-forms/${selectedForm._id}`);
-
-      setExitForms(exitForms.map(form => 
-        form._id === selectedForm._id ? updatedForm.data : form
-      ));
+      await axios.put("http://localhost:5000/api/exit-forms/" + selectedForm._id, formDataToSend, { headers: { "Content-Type": "multipart/form-data", Authorization: "Bearer " + token } });
+      const updatedForm = await axios.get("http://localhost:5000/api/exit-forms/" + selectedForm._id, { headers: { Authorization: "Bearer " + token } });
+      setExitForms(exitForms.map(form => (form._id === selectedForm._id ? updatedForm.data : form)));
       setShowUpdateModal(false);
     } catch (err) {
       console.error("Error updating exit form:", err);
@@ -165,11 +145,11 @@ const ExitForm = () => {
     setFormData({
       reference: form.reference,
       date: form.date.split('T')[0],
-      fournisseur: form.fournisseur._id,
+      description: form.description || '',
+      equipment: form.equipment.map(eq => eq._id),
       document: null,
       status: form.status
     });
-    setEquipment(form.equipment || []);
     setFormErrors({});
     setShowUpdateModal(true);
   };
@@ -183,21 +163,70 @@ const ExitForm = () => {
     if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: "" }));
   };
 
-  const filteredForms = exitForms.filter(form => (
-    (!selectedFournisseur || form.fournisseur?._id === selectedFournisseur) &&
-    (!selectedStatus || form.status === selectedStatus)
-  ));
+  const handleEquipmentChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    setFormData(prev => ({
+      ...prev,
+      equipment: selectedOptions
+    }));
+  };
 
-  const openEquipmentModal = (equipment) => {
-    setSelectedFormEquipment(equipment);
+  const filteredForms = exitForms;
+
+  const openEquipmentModal = (form) => {
+    setSelectedFormEquipment(form.equipment);
+    setSelectedFormDetails({
+      reference: form.reference,
+      date: new Date(form.date).toLocaleDateString(),
+      description: form.description
+    });
     setShowEquipmentModal(true);
+  };
+
+  const handlePrint = () => {
+    setIsPrinting(true);
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 100);
+  };
+
+  const openEquipmentSelection = (isCreate = false) => {
+    setIsCreateForm(isCreate);
+    if (isCreate) {
+      setPreviousEquipmentSelection(formData.equipment);
+    } else {
+      setPreviousEquipmentSelection(formData.equipment);
+    }
+    setShowEquipmentSelectionModal(true);
+  };
+
+  const handleEquipmentSelect = (selectedEquipment) => {
+    setFormData(prev => ({
+      ...prev,
+      equipment: selectedEquipment
+    }));
+    setShowEquipmentSelectionModal(false);
+  };
+
+  const confirmEquipmentSelection = () => {
+    if (formData.equipment.length > 0) {
+      setShowEquipmentSelectionModal(false);
+    } else {
+      setFormErrors(prev => ({ ...prev, equipment: "Au moins un équipement est requis" }));
+    }
+  };
+
+  const cancelEquipmentSelection = () => {
+    setFormData(prev => ({ ...prev, equipment: previousEquipmentSelection }));
+    setShowEquipmentSelectionModal(false);
   };
 
   return (
     <div className="pt-[70px] p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Fiches de Sortie</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <h1 className="text-2xl font-bold text-gray-900">Gestion des Fiches de Sortie</h1>
+        <p className="mt-1 text-sm text-gray-500">
           Gérez les fiches de sortie des équipements
         </p>
       </div>
@@ -220,9 +249,9 @@ const ExitForm = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         onSubmit={handleCreate}
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6"
+        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6"
       >
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Ajouter une fiche de sortie</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Ajouter une fiche de sortie</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
             label="Référence"
@@ -241,65 +270,52 @@ const ExitForm = () => {
             error={formErrors.date}
             icon={<Calendar size={18} />}
           />
-          <SelectField
-            label="Fournisseur"
-            name="fournisseur"
-            value={formData.fournisseur}
-            options={fournisseurs}
-            onChange={handleInputChange}
-            error={formErrors.fournisseur}
-            icon={<FileText size={18} />}
-          />
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description {formErrors.description && <span className="text-red-500">*</span>}
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+            onChange={handleInputChange}
+              rows="3"
+              className={`w-full rounded-lg border px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                formErrors.description ? 'border-red-500' : 'border-gray-200'
+              }`}
+              placeholder="Entrez la description de la fiche de sortie..."
+            />
+            {formErrors.description && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>
+            )}
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Équipements {formErrors.equipment && <span className="text-red-500">*</span>}
             </label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={newEquipment}
-                onChange={(e) => setNewEquipment(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddEquipment();
-                  }
-                }}
-                placeholder="Ajouter un équipement"
-                className="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white"
-              />
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={handleAddEquipment}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            <div className="relative">
+              <div 
+                onClick={() => openEquipmentSelection(true)}
+                className="flex items-center justify-between w-full px-3 py-2 border border-gray-200 rounded-lg bg-white cursor-pointer hover:border-blue-500"
               >
-                <Plus size={18} />
-              </motion.button>
+                <div className="flex items-center gap-2">
+                  <FileText size={16} className="text-gray-400" />
+                  <span className="text-sm text-gray-600">
+                    {formData.equipment.length > 0 
+                      ? `${formData.equipment.length} équipement(s) sélectionné(s)`
+                      : "Sélectionner des équipements"}
+                  </span>
+                </div>
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
             {formErrors.equipment && (
               <p className="text-red-500 text-xs mt-1">{formErrors.equipment}</p>
             )}
-            <div className="space-y-2">
-              {equipment.map((item, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-slate-700 p-2 rounded-lg">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    type="button"
-                    onClick={() => handleRemoveEquipment(index)}
-                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                  >
-                    <Trash2 size={18} />
-                  </motion.button>
-                </div>
-              ))}
-            </div>
           </div>
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Document (PDF)
             </label>
             <input
@@ -307,7 +323,7 @@ const ExitForm = () => {
               name="document"
               onChange={handleInputChange}
               accept=".pdf"
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white"
+              className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             {formErrors.document && (
               <p className="text-red-500 text-xs mt-1">{formErrors.document}</p>
@@ -325,111 +341,61 @@ const ExitForm = () => {
         </motion.button>
       </motion.form>
 
-      {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Filtrer les fiches de sortie</h3>
-          <div className="flex items-center gap-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">Filtres</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Fournisseur
-            </label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <FileText size={18} />
-              </div>
-              <select
-                value={selectedFournisseur}
-                onChange={(e) => setSelectedFournisseur(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white"
-              >
-                <option value="">Tous les fournisseurs</option>
-                {fournisseurs.map(opt => (
-                  <option key={opt._id} value={opt._id}>
-                    {opt.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <SelectInput
-            label="Statut"
-            value={selectedStatus}
-            onChange={setSelectedStatus}
-            options={["", "pending", "approved", "rejected"]}
-            labels={["Tous", "En attente", "Approuvé", "Rejeté"]}
-            icon={<FileText size={18} />}
-          />
-        </div>
-      </motion.div>
-
       {/* Exit Forms Table */}
       {!loading && !error && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+          className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
         >
           {filteredForms.length === 0 ? (
-            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+            <div className="p-4 text-center text-gray-500">
               Aucune fiche de sortie trouvée
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-slate-700">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    {["Référence", "Date", "Fournisseur", "Équipement", "PDF", "Statut", "Actions"].map((header) => (
-                      <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    {["Référence", "Date", "Équipement", "PDF", "Actions"].map((header) => (
+                      <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {header}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="bg-white divide-y divide-gray-200">
                   {filteredForms.map((form) => (
                     <motion.tr
                       key={form._id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="hover:bg-gray-50 dark:hover:bg-slate-700"
+                      className="hover:bg-gray-50"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {form.reference}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(form.date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {form.fournisseur?.name || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => openEquipmentModal(form.equipment)}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/40"
+                          onClick={() => openEquipmentModal(form)}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <FileText size={14} className="mr-1" />
-                          Voir les équipements ({form.equipment.length})
+                          Voir les équipements ({Array.isArray(form.equipment) ? form.equipment.length : 0})
                         </motion.button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {form.document ? (
                           <a
                             href={`http://localhost:5000${form.document}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            className="text-blue-600 hover:text-blue-900"
                           >
                             <Download size={18} />
                           </a>
@@ -437,25 +403,13 @@ const ExitForm = () => {
                           "-"
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          form.status === "approved" 
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : form.status === "rejected"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                        }`}>
-                          {form.status === "approved" ? "Approuvé" : 
-                           form.status === "rejected" ? "Rejeté" : "En attente"}
-                        </span>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-x-2">
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => openUpdateModal(form)}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            className="text-blue-600 hover:text-blue-900"
                           >
                             <Edit2 size={18} />
                           </motion.button>
@@ -466,7 +420,7 @@ const ExitForm = () => {
                               setSelectedForm(form);
                               setShowDeleteModal(true);
                             }}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            className="text-red-600 hover:text-red-900"
                           >
                             <Trash2 size={18} />
                           </motion.button>
@@ -487,70 +441,247 @@ const ExitForm = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-2xl w-full shadow-xl"
+            className="bg-white rounded-lg p-6 max-w-4xl w-full shadow-xl"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-x-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                  <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <FileText className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Liste des équipements</h3>
+                <h3 className="text-lg font-medium text-gray-900">Détails de la fiche de sortie</h3>
               </div>
+              <div className="flex items-center gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handlePrint}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Imprimer
+                </motion.button>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowEquipmentModal(false)}
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                  className="text-gray-400 hover:text-gray-500"
               >
                 <X size={24} />
               </motion.button>
             </div>
+            </div>
+
+            {/* Form Details */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Référence</h4>
+                  <p className="mt-1 text-sm text-gray-900">{selectedFormDetails?.reference}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Date</h4>
+                  <p className="mt-1 text-sm text-gray-900">{selectedFormDetails?.date}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <h4 className="text-sm font-medium text-gray-500">Description</h4>
+                  <p className="mt-1 text-sm text-gray-900">{selectedFormDetails?.description}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Equipment List */}
             <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-500 mb-3">Liste des équipements</h4>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-slate-700">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        #
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Nom
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Équipement
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Numéro de série
                       </th>
+                 
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {selectedFormEquipment.map((item, index) => (
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {selectedFormEquipment.map((eq) => (
                       <motion.tr
-                        key={index}
+                        key={eq._id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="hover:bg-gray-50 dark:hover:bg-slate-700"
+                        className="hover:bg-gray-50"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {index + 1}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {eq.name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {item}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {eq.serial_number}
                         </td>
+                       
                       </motion.tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
-            <div className="mt-6 flex justify-end">
+          </motion.div>
+        </div>
+      )}
+
+      {/* Equipment Selection Modal */}
+      {showEquipmentSelectionModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg p-6 max-w-4xl w-full shadow-xl"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-x-3">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">Sélectionner des équipements</h3>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={cancelEquipmentSelection}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X size={24} />
+              </motion.button>
+            </div>
+
+            <div className="mt-4">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <input
+                          type="checkbox"
+                          onChange={(e) => {
+                            const allChecked = e.target.checked;
+                            const allEquipmentIds = equipment.map(eq => eq._id);
+                            handleEquipmentSelect(allChecked ? allEquipmentIds : []);
+                          }}
+                          checked={formData.equipment.length === equipment.length}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Nom
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Numéro de série
+                      </th>
+                 
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {equipment.map((eq) => (
+                      <motion.tr
+                        key={eq._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-gray-50"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={formData.equipment.includes(eq._id)}
+                            onChange={(e) => {
+                              const newEquipment = e.target.checked
+                                ? [...formData.equipment, eq._id]
+                                : formData.equipment.filter(id => id !== eq._id);
+                              handleEquipmentSelect(newEquipment);
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {eq.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {eq.serial_number}
+                        </td>
+                   
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-x-3">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setShowEquipmentModal(false)}
+                onClick={cancelEquipmentSelection}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={confirmEquipmentSelection}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                Fermer
+                Confirmer
               </motion.button>
             </div>
           </motion.div>
         </div>
       )}
+
+      {/* Print Styles */}
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .fixed, .fixed * {
+              visibility: visible;
+            }
+            .fixed {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+            button {
+              display: none !important;
+            }
+            .bg-gray-50 {
+              background-color: #f9fafb !important;
+              -webkit-print-color-adjust: exact;
+            }
+            .bg-white {
+              background-color: white !important;
+              -webkit-print-color-adjust: exact;
+            }
+            .bg-green-100 {
+              background-color: #d1fae5 !important;
+              -webkit-print-color-adjust: exact;
+            }
+            .bg-yellow-100 {
+              background-color: #fef3c7 !important;
+              -webkit-print-color-adjust: exact;
+            }
+            .bg-red-100 {
+              background-color: #fee2e2 !important;
+              -webkit-print-color-adjust: exact;
+            }
+          }
+        `}
+      </style>
 
       {/* Modals */}
       <DeleteModal
@@ -566,8 +697,9 @@ const ExitForm = () => {
         onSave={handleUpdate}
         data={formData}
         errors={formErrors}
-        fournisseurs={fournisseurs}
+        equipment={equipment}
         onChange={handleInputChange}
+        onEquipmentChange={handleEquipmentChange}
       />
     </div>
   );
@@ -575,7 +707,7 @@ const ExitForm = () => {
 
 const InputField = ({ label, name, value, onChange, error, type = "text", icon, ...props }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    <label className="block text-sm font-medium text-gray-700 mb-1">
       {label} {error && <span className="text-red-500">*</span>}
     </label>
     <div className="relative">
@@ -589,7 +721,7 @@ const InputField = ({ label, name, value, onChange, error, type = "text", icon, 
         name={name}
         value={value}
         onChange={onChange}
-        className={`w-full rounded-lg border px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white ${
+        className={`w-full rounded-lg border px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
           error ? 'border-red-500' : 'border-gray-200'
         } ${icon ? "pl-10" : ""}`}
         {...props}
@@ -599,40 +731,9 @@ const InputField = ({ label, name, value, onChange, error, type = "text", icon, 
   </div>
 );
 
-const SelectField = ({ label, name, value, options, onChange, error, icon, placeholder = "Sélectionner..." }) => (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-      {label} {error && <span className="text-red-500">*</span>}
-    </label>
-    <div className="relative">
-      {icon && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-          {icon}
-        </div>
-      )}
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        className={`w-full rounded-lg border px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white ${
-          error ? 'border-red-500' : 'border-gray-200'
-        } ${icon ? "pl-10" : ""}`}
-      >
-        <option value="">{placeholder}</option>
-        {options.map(opt => (
-          <option key={opt._id} value={opt._id}>
-            {opt.name}
-          </option>
-        ))}
-      </select>
-    </div>
-    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-  </div>
-);
-
 const SelectInput = ({ label, value, onChange, options, labels, icon }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
     <div className="relative">
       {icon && (
         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -642,7 +743,7 @@ const SelectInput = ({ label, value, onChange, options, labels, icon }) => (
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white ${
+        className={`w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
           icon ? "pl-10" : ""
         }`}
       >
@@ -659,15 +760,15 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, item }) => isOpen && (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-sm w-full shadow-xl"
+      className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl"
     >
       <div className="flex items-center gap-x-3 mb-4">
-        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
-          <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+        <div className="p-2 bg-red-100 rounded-full">
+          <Trash2 className="h-6 w-6 text-red-600" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Confirmer la suppression</h3>
+        <h3 className="text-lg font-medium text-gray-900">Confirmer la suppression</h3>
       </div>
-      <p className="text-gray-600 dark:text-gray-400 mb-6">
+      <p className="text-gray-600 mb-6">
         Êtes-vous sûr de vouloir supprimer la fiche de sortie "{item}" ?
       </p>
       <div className="flex justify-end gap-x-3">
@@ -675,7 +776,7 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, item }) => isOpen && (
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onClose}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
         >
           Annuler
         </motion.button>
@@ -692,18 +793,18 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, item }) => isOpen && (
   </div>
 );
 
-const UpdateModal = ({ isOpen, onClose, onSave, data, errors, fournisseurs, onChange }) => isOpen && (
+const UpdateModal = ({ isOpen, onClose, onSave, data, errors, equipment, onChange, onEquipmentChange }) => isOpen && (
   <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full shadow-xl"
+      className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl"
     >
       <div className="flex items-center gap-x-3 mb-4">
-        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-          <Edit2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        <div className="p-2 bg-blue-100 rounded-full">
+          <Edit2 className="h-6 w-6 text-blue-600" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Modifier la fiche de sortie</h3>
+        <h3 className="text-lg font-medium text-gray-900">Modifier la fiche de sortie</h3>
       </div>
       <div className="space-y-4">
         <InputField
@@ -723,41 +824,52 @@ const UpdateModal = ({ isOpen, onClose, onSave, data, errors, fournisseurs, onCh
           error={errors.date}
           icon={<Calendar size={18} />}
         />
-        <SelectField
-          label="Fournisseur"
-          name="fournisseur"
-          value={data.fournisseur}
-          options={fournisseurs}
-          onChange={onChange}
-          error={errors.fournisseur}
-          icon={<FileText size={18} />}
-        />
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Équipements
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description {errors.description && <span className="text-red-500">*</span>}
           </label>
-          <div className="space-y-2">
-            {data.equipment.map((item, index) => (
-              <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-slate-700 p-2 rounded-lg">
-                <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  type="button"
-                  onClick={() => {
-                    const newEquipment = data.equipment.filter((_, i) => i !== index);
-                    onChange({ target: { name: "equipment", value: newEquipment } });
-                  }}
-                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                >
-                  <Trash2 size={18} />
-                </motion.button>
-              </div>
-            ))}
-          </div>
+          <textarea
+            name="description"
+            value={data.description}
+          onChange={onChange}
+            rows="3"
+            className={`w-full rounded-lg border px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+              errors.description ? 'border-red-500' : 'border-gray-200'
+            }`}
+            placeholder="Entrez la description de la fiche de sortie..."
+          />
+          {errors.description && (
+            <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+          )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Équipements {errors.equipment && <span className="text-red-500">*</span>}
+          </label>
+          <div className="relative">
+            <div 
+              onClick={() => openEquipmentSelection(false)}
+              className="flex items-center justify-between w-full px-3 py-2 border border-gray-200 rounded-lg bg-white cursor-pointer hover:border-blue-500"
+            >
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  {data.equipment.length > 0 
+                    ? `${data.equipment.length} équipement(s) sélectionné(s)`
+                    : "Sélectionner des équipements"}
+                </span>
+              </div>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+          </div>
+          </div>
+          {errors.equipment && (
+            <p className="text-red-500 text-xs mt-1">{errors.equipment}</p>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Document (PDF)
           </label>
           <input
@@ -765,38 +877,18 @@ const UpdateModal = ({ isOpen, onClose, onSave, data, errors, fournisseurs, onCh
             name="document"
             onChange={onChange}
             accept=".pdf"
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           {errors.document && (
             <p className="text-red-500 text-xs mt-1">{errors.document}</p>
           )}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Statut
-          </label>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <FileText size={18} />
-            </div>
-            <select
-              name="status"
-              value={data.status}
-              onChange={onChange}
-              className="w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white"
-            >
-              <option value="pending">En attente</option>
-              <option value="approved">Approuvé</option>
-              <option value="rejected">Rejeté</option>
-            </select>
-          </div>
         </div>
         <div className="flex justify-end gap-x-3 pt-4">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
           >
             Annuler
           </motion.button>

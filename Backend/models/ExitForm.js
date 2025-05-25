@@ -11,23 +11,18 @@ const ExitFormSchema = new mongoose.Schema({
     required: [true, "Date is required"],
     default: Date.now
   },
-  fournisseur: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Fournisseur",
-    required: [true, "Supplier reference is required"]
-  },
-  equipment: {
-    type: [String],
-    required: [true, "At least one equipment is required"]
-  },
-  document: {
-    type: String, 
-    required: [true, "Document is required"]
-  },
-  status: {
+  description: {
     type: String,
-    enum: ["pending", "approved", "rejected"],
-    default: "pending"
+    required: [true, "Description is required"]
+  },
+  equipment: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Equipment",
+    required: [true, "Equipment reference is required"]
+  }],
+  document: {
+    type: String,
+    required: false
   }
 }, {
   timestamps: true

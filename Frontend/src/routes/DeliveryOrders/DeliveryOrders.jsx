@@ -19,7 +19,8 @@ import {
   BarChart2,
   Package,
   DollarSign,
-  Clock
+  Clock,
+  X
 } from "lucide-react";
 
 const DeliveryOrders = () => {
@@ -46,6 +47,9 @@ const DeliveryOrders = () => {
   const [formErrors, setFormErrors] = useState({});
   const [selectedStatus, setSelectedStatus] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: 'deliveryDate', direction: 'desc' });
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
+  const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState("");
 
   // Calculate totals for items
   const calculateItemTotal = (item) => {
@@ -211,8 +215,174 @@ const DeliveryOrders = () => {
   };
 
   const handlePrint = (order) => {
-    // Implement print functionality
-    window.print();
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Create the print content
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Bon de Livraison - ${order.reference}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .info-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 30px;
+            }
+            .info-item {
+              margin-bottom: 10px;
+            }
+            .info-label {
+              font-weight: bold;
+              color: #666;
+              font-size: 14px;
+            }
+            .info-value {
+              margin-top: 5px;
+              font-size: 16px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 30px;
+            }
+            th, td {
+              padding: 12px;
+              text-align: left;
+              border-bottom: 1px solid #ddd;
+            }
+            th {
+              background-color: #f8f9fa;
+              font-weight: bold;
+              color: #666;
+            }
+            .total {
+              text-align: right;
+              font-weight: bold;
+              font-size: 18px;
+              margin-top: 20px;
+            }
+            .notes {
+              margin-top: 30px;
+              padding: 15px;
+              background-color: #f8f9fa;
+              border-radius: 5px;
+            }
+            .status {
+              display: inline-block;
+              padding: 5px 10px;
+              border-radius: 15px;
+              font-size: 14px;
+              font-weight: bold;
+            }
+            .status-delivered { background-color: #d1fae5; color: #065f46; }
+            .status-pending { background-color: #fef3c7; color: #92400e; }
+            .status-cancelled { background-color: #fee2e2; color: #991b1b; }
+            @media print {
+              body { padding: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Bon de Livraison</h1>
+            <p>Référence: ${order.reference}</p>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Client</div>
+              <div class="info-value">${order.customerName}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Date de Livraison</div>
+              <div class="info-value">${new Date(order.deliveryDate).toLocaleDateString()}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Téléphone</div>
+              <div class="info-value">${order.customerPhone}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Statut</div>
+              <div class="info-value">
+                <span class="status status-${order.status}">
+                  ${order.status === "delivered" ? "Livré" : 
+                    order.status === "cancelled" ? "Annulé" : "En attente"}
+                </span>
+              </div>
+            </div>
+            <div class="info-item" style="grid-column: 1 / -1;">
+              <div class="info-label">Adresse</div>
+              <div class="info-value">${order.customerAddress}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="text-align: right;">Quantité</th>
+                <th style="text-align: right;">Prix Unitaire</th>
+                <th style="text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.items.map(item => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td style="text-align: right;">${item.quantity}</td>
+                  <td style="text-align: right;">${parseFloat(item.unitPrice).toFixed(2)} €</td>
+                  <td style="text-align: right;">${(parseFloat(item.quantity) * parseFloat(item.unitPrice)).toFixed(2)} €</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" style="text-align: right; font-weight: bold;">Total</td>
+                <td style="text-align: right; font-weight: bold;">${calculateOrderTotal(order.items).toFixed(2)} €</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          ${order.notes ? `
+            <div class="notes">
+              <div class="info-label">Notes</div>
+              <div class="info-value">${order.notes}</div>
+            </div>
+          ` : ''}
+
+          <div class="no-print" style="text-align: center; margin-top: 20px;">
+            <button onclick="window.print()" style="padding: 10px 20px; background-color: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer;">
+              Imprimer
+            </button>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Write the content to the new window
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    // Wait for content to load then print
+    printWindow.onload = function() {
+      printWindow.print();
+      // Close the window after printing (optional)
+      // printWindow.close();
+    };
   };
 
   // Filter orders based on search query and status
@@ -351,48 +521,6 @@ const DeliveryOrders = () => {
           </div>
         </motion.div>
       )}
-
-      {/* Search and Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-6"
-      >
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <Search size={18} />
-              </div>
-              <input
-                type="text"
-                placeholder="Rechercher par client, référence ou téléphone..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white"
-              />
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <SelectInput
-              label="Statut"
-              value={selectedStatus}
-              onChange={setSelectedStatus}
-              options={["", "pending", "delivered", "cancelled"]}
-              labels={["Tous", "En attente", "Livré", "Annulé"]}
-              icon={<Truck size={18} />}
-            />
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
-            >
-              <Filter size={18} />
-              <span>Filtres</span>
-            </motion.button>
-          </div>
-        </div>
-      </motion.div>
 
       {/* Create Form */}
       <motion.form
@@ -585,158 +713,285 @@ const DeliveryOrders = () => {
         </div>
       </motion.form>
 
-      {/* Delivery Orders Table */}
+      {/* Delivery Orders Table with Filters */}
       {!loading && !error && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden"
+          className="space-y-6"
         >
-          {filteredOrders.length === 0 ? (
-            <div className="p-8 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 mb-4">
-                <Package className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+          {/* Filters */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher un bon de livraison..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="ml-4 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600"
+                >
+                  <Filter className="w-4 h-4" />
+                  Filtres
+                  {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Aucun bon de livraison trouvé</h3>
-              <p className="text-gray-500 dark:text-gray-400">Commencez par créer un nouveau bon de livraison</p>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-slate-700">
-                  <tr>
-                    {[
-                      { key: 'reference', label: 'Référence' },
-                      { key: 'customerName', label: 'Client' },
-                      { key: 'deliveryDate', label: 'Date' },
-                      { key: 'total', label: 'Total' },
-                      { key: 'status', label: 'Statut' },
-                      { key: 'actions', label: 'Actions' }
-                    ].map(({ key, label }) => (
-                      <th
-                        key={key}
-                        onClick={() => key !== 'actions' && handleSort(key)}
-                        className={`px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${
-                          key !== 'actions' ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600' : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {label}
-                          {sortConfig.key === key && (
-                            <span>{sortConfig.direction === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
-                          )}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {sortedOrders.map((order) => (
-                    <motion.tr
-                      key={order._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-4 border-t border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex flex-wrap gap-4">
+                  <FilterSelect
+                    label="Statut"
+                    value={selectedStatus}
+                    onChange={setSelectedStatus}
+                    options={[
+                      { _id: "", name: "Tous" },
+                      { _id: "pending", name: "En attente" },
+                      { _id: "delivered", name: "Livré" },
+                      { _id: "cancelled", name: "Annulé" }
+                    ]}
+                    icon={<Truck size={16} />}
+                  />
+
+                  <FilterSelect
+                    label="Méthode de Paiement"
+                    value={selectedPaymentMethod}
+                    onChange={setSelectedPaymentMethod}
+                    options={[
+                      { _id: "", name: "Tous" },
+                      { _id: "cash", name: "Espèces" },
+                      { _id: "card", name: "Carte" },
+                      { _id: "transfer", name: "Virement" }
+                    ]}
+                    icon={<DollarSign size={16} />}
+                  />
+
+                  <FilterSelect
+                    label="Méthode de Livraison"
+                    value={selectedDeliveryMethod}
+                    onChange={setSelectedDeliveryMethod}
+                    options={[
+                      { _id: "", name: "Tous" },
+                      { _id: "standard", name: "Standard" },
+                      { _id: "express", name: "Express" },
+                      { _id: "pickup", name: "Point Relais" }
+                    ]}
+                    icon={<Truck size={16} />}
+                  />
+                </div>
+
+                {(selectedStatus || selectedPaymentMethod || selectedDeliveryMethod) && (
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Filtres actifs:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedStatus && (
+                        <FilterChip
+                          label={`Statut: ${
+                            selectedStatus === "pending" ? "En attente" :
+                            selectedStatus === "delivered" ? "Livré" : "Annulé"
+                          }`}
+                          onRemove={() => setSelectedStatus("")}
+                        />
+                      )}
+                      {selectedPaymentMethod && (
+                        <FilterChip
+                          label={`Paiement: ${
+                            selectedPaymentMethod === "cash" ? "Espèces" :
+                            selectedPaymentMethod === "card" ? "Carte" : "Virement"
+                          }`}
+                          onRemove={() => setSelectedPaymentMethod("")}
+                        />
+                      )}
+                      {selectedDeliveryMethod && (
+                        <FilterChip
+                          label={`Livraison: ${
+                            selectedDeliveryMethod === "standard" ? "Standard" :
+                            selectedDeliveryMethod === "express" ? "Express" : "Point Relais"
+                          }`}
+                          onRemove={() => setSelectedDeliveryMethod("")}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </motion.div>
+
+          {/* Table */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden"
+          >
+            {filteredOrders.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 mb-4">
+                  <Package className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Aucun bon de livraison trouvé</h3>
+                <p className="text-gray-500 dark:text-gray-400">Commencez par créer un nouveau bon de livraison</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-slate-700">
+                    <tr>
+                      {[
+                        { key: 'reference', label: 'Référence' },
+                        { key: 'customerName', label: 'Client' },
+                        { key: 'deliveryDate', label: 'Date' },
+                        { key: 'total', label: 'Total' },
+                        { key: 'status', label: 'Statut' },
+                        { key: 'actions', label: 'Actions' }
+                      ].map(({ key, label }) => (
+                        <th
+                          key={key}
+                          onClick={() => key !== 'actions' && handleSort(key)}
+                          className={`px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${
+                            key !== 'actions' ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {label}
+                            {sortConfig.key === key && (
+                              <span>{sortConfig.direction === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
+                            )}
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {order.reference}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {sortedOrders.map((order) => (
+                      <motion.tr
+                        key={order._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {order.reference}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">{order.customerName}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{order.customerPhone}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {new Date(order.deliveryDate).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {order.total?.toFixed(2)} €
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          order.status === "delivered" 
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : order.status === "cancelled"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                        }`}>
-                          {order.status === "delivered" ? "Livré" : 
-                           order.status === "cancelled" ? "Annulé" : "En attente"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-x-3">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowViewModal(true);
-                            }}
-                            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
-                          >
-                            <Eye size={18} />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => openUpdateModal(order)}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            <Edit2 size={18} />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handlePrint(order)}
-                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                          >
-                            <Printer size={18} />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowDeleteModal(true);
-                            }}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            <Trash2 size={18} />
-                          </motion.button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-white">{order.customerName}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{order.customerPhone}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {new Date(order.deliveryDate).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {order.total?.toFixed(2)} €
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            order.status === "delivered" 
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              : order.status === "cancelled"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                          }`}>
+                            {order.status === "delivered" ? "Livré" : 
+                             order.status === "cancelled" ? "Annulé" : "En attente"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-x-3">
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowViewModal(true);
+                              }}
+                              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                            >
+                              <Eye size={18} />
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => openUpdateModal(order)}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              <Edit2 size={18} />
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => handlePrint(order)}
+                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                            >
+                              <Printer size={18} />
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowDeleteModal(true);
+                              }}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 size={18} />
+                            </motion.button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </motion.div>
         </motion.div>
       )}
 
       {/* Modals */}
       <AnimatePresence>
+        {showDeleteModal && (
         <DeleteModal
+            key="delete-modal"
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
           onConfirm={handleDelete}
           item={selectedOrder?.reference}
         />
+        )}
 
+        {showUpdateModal && (
         <UpdateModal
+            key="update-modal"
           isOpen={showUpdateModal}
           onClose={() => setShowUpdateModal(false)}
           onSave={handleUpdate}
@@ -748,13 +1003,17 @@ const DeliveryOrders = () => {
           onRemoveItem={removeItem}
           calculateTotal={calculateOrderTotal}
         />
+        )}
 
+        {showViewModal && (
         <ViewModal
+            key="view-modal"
           isOpen={showViewModal}
           onClose={() => setShowViewModal(false)}
           order={selectedOrder}
           calculateTotal={calculateOrderTotal}
         />
+        )}
       </AnimatePresence>
     </div>
   );
@@ -1223,12 +1482,8 @@ const ViewModal = ({ isOpen, onClose, order, calculateTotal }) => isOpen && (
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan="3" className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white text-right">
-                    Total
-                  </td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white text-right">
-                    {calculateTotal(order.items).toFixed(2)} €
-                  </td>
+                  <td colSpan="3" style="text-align: right; font-weight: bold;">Total</td>
+                  <td style="text-align: right; font-weight: bold;">{calculateTotal(order.items).toFixed(2)} €</td>
                 </tr>
               </tfoot>
             </table>
@@ -1254,6 +1509,41 @@ const ViewModal = ({ isOpen, onClose, order, calculateTotal }) => isOpen && (
         </div>
       </div>
     </motion.div>
+  </div>
+);
+
+const FilterChip = ({ label, onRemove }) => (
+  <div className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm dark:bg-blue-900/30 dark:text-blue-400">
+    {label}
+    <button
+      onClick={onRemove}
+      className="hover:text-blue-900 dark:hover:text-blue-300"
+    >
+      <X className="w-3 h-3" />
+    </button>
+  </div>
+);
+
+const FilterSelect = ({ label, options, value, onChange, icon }) => (
+  <div className="relative min-w-[180px]">
+    <div className="relative">
+      {icon && (
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+          {icon}
+        </div>
+      )}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`block w-full ${icon ? 'pl-8' : 'pl-3'} pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-800`}
+      >
+        {options.map((option) => (
+          <option key={option._id} value={option._id}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+    </div>
   </div>
 );
 

@@ -21,6 +21,7 @@ const reclamationRoutes = require('./reclamationRoutes');
 const besoinRoutes = require('./besoinRoutes');
 const panneRoutes = require('./panneRoutes');
 const panneTypeRoutes = require('./panneTypeRoutes');
+const devisRoutes = require('./devisRoutes');
 
 const router = express.Router();
 console.log("📌 Index routes file is loaded");
@@ -47,5 +48,6 @@ router.use('/reclamations', reclamationRoutes);
 router.use('/besoins', besoinRoutes);
 router.use('/pannes', panneRoutes);
 router.use('/panne-types', panneTypeRoutes);
+router.use('/devis', devisRoutes);
 
 module.exports = router; 

@@ -2,6 +2,7 @@ const ExitForm = require("../models/ExitForm");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 const uploadDir = path.join(__dirname, "../uploads/exit-forms");
 if (!fs.existsSync(uploadDir)) {
@@ -32,7 +33,7 @@ const upload = multer({
 exports.getAllExitForms = async (req, res) => {
   try {
     const exitForms = await ExitForm.find()
-      .populate("fournisseur")
+      .populate("equipment")
       .sort({ createdAt: -1 });
     res.json(exitForms);
   } catch (error) {
@@ -44,7 +45,7 @@ exports.getAllExitForms = async (req, res) => {
 exports.getSingleExitForm = async (req, res) => {
   try {
     const exitForm = await ExitForm.findById(req.params.id)
-      .populate("fournisseur");
+      .populate("equipment");
     if (!exitForm) {
       return res.status(404).json({ message: "Exit form not found" });
     }
@@ -70,6 +71,10 @@ exports.createExitForm = async (req, res) => {
       let equipment = [];
       try {
         equipment = JSON.parse(req.body.equipment);
+        // Validate that all equipment IDs are valid ObjectIds
+        if (!equipment.every(id => mongoose.Types.ObjectId.isValid(id))) {
+          return res.status(400).json({ error: "Invalid equipment ID format" });
+        }
       } catch (e) {
         console.error("Error parsing equipment:", e);
         return res.status(400).json({ error: "Invalid equipment data" });
@@ -78,17 +83,22 @@ exports.createExitForm = async (req, res) => {
       const exitForm = new ExitForm({
         reference: req.body.reference,
         date: req.body.date,
-        fournisseur: req.body.fournisseur,
+        description: req.body.description || '',
         equipment: equipment,
-        document: req.file ? `/uploads/exit-forms/${req.file.filename}` : null,
-        status: req.body.status || "pending"
+        document: req.file ? `/uploads/exit-forms/${req.file.filename}` : undefined
       });
 
       const savedForm = await exitForm.save();
-      console.log("Saved exit form:", savedForm);
-      res.status(201).json(savedForm);
+      const populatedForm = await ExitForm.findById(savedForm._id).populate("equipment");
+      console.log("Saved exit form:", populatedForm);
+      res.status(201).json(populatedForm);
     } catch (error) {
       console.error("Error creating exit form:", error);
+      // Send more detailed error message
+      if (error.name === 'ValidationError') {
+        const validationErrors = Object.values(error.errors).map(err => err.message);
+        return res.status(400).json({ error: validationErrors.join(', ') });
+      }
       res.status(400).json({ error: error.message });
     }
   });
@@ -113,9 +123,8 @@ exports.updateExitForm = async (req, res) => {
       const updateData = {
         reference: req.body.reference,
         date: req.body.date,
-        fournisseur: req.body.fournisseur,
-        equipment: equipment,
-        status: req.body.status
+        description: req.body.description,
+        equipment: equipment
       };
 
       if (req.file) {
@@ -126,7 +135,7 @@ exports.updateExitForm = async (req, res) => {
         req.params.id,
         updateData,
         { new: true }
-      ).populate("fournisseur");
+      ).populate("equipment");
 
       if (!exitForm) {
         return res.status(404).json({ message: "Exit form not found" });

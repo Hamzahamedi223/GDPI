@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import UserService from "../UserService";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
-
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -116,10 +115,11 @@ const Login = () => {
         <div className="hidden md:block relative overflow-hidden" ref={imageRef}>
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 mix-blend-overlay" />
           <img
-            src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80"
-            alt="Medical Technology"
-            className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
-          />
+  src="/aa.jpg"
+  alt="Medical Technology"
+  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
+/>
+
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-white text-center p-8 bg-black/20 backdrop-blur-sm rounded-2xl max-w-md">
               <h3 className="text-2xl font-bold mb-2">Gestion Intelligente d'Équipements</h3>

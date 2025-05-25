@@ -15,7 +15,10 @@ import {
   Filter, 
   Edit2, 
   Trash2, 
-  Truck 
+  Truck,
+  ChevronDown,
+  ChevronUp,
+  X
 } from "lucide-react";
 
 const Equipments = () => {
@@ -37,6 +40,7 @@ const Equipments = () => {
   const [selectedFournisseur, setSelectedFournisseur] = useState("");
   const [filteredEquipments, setFilteredEquipments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -76,22 +80,22 @@ const Equipments = () => {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    try {
+    const fetchData = async () => {
+      try {
       const [equipRes, deptRes, catRes, modelRes, fournRes] = await Promise.all([
         axios.get("http://localhost:5000/api/equipment"),
-        axios.get("http://localhost:5000/api/departments"),
-        axios.get("http://localhost:5000/api/categories"),
-        axios.get("http://localhost:5000/api/models"),
-        axios.get("http://localhost:5000/api/fournisseurs"),
-      ]);
+          axios.get("http://localhost:5000/api/departments"),
+          axios.get("http://localhost:5000/api/categories"),
+          axios.get("http://localhost:5000/api/models"),
+          axios.get("http://localhost:5000/api/fournisseurs"),
+        ]);
 
       setEquipments(equipRes.data);
-      setDepartments(deptRes.data.departments);
-      setCategories(catRes.data.categories);
-      setModels(modelRes.data.models);
-      setFournisseurs(fournRes.data.fournisseurs);
-    } catch (err) {
+        setDepartments(deptRes.data.departments);
+        setCategories(catRes.data.categories);
+        setModels(modelRes.data.models);
+        setFournisseurs(fournRes.data.fournisseurs);
+      } catch (err) {
       setError("Erreur lors du chargement des données");
     } finally {
       setLoading(false);
@@ -231,8 +235,8 @@ const Equipments = () => {
     <div className="pt-[70px] p-6">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Équipements</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Équipements</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Gérez et suivez tous les équipements de l'hôpital
           </p>
         </div>
@@ -332,74 +336,139 @@ const Equipments = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6"
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Rechercher un équipement..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="ml-4 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600"
+            >
+              <Filter className="w-4 h-4" />
+              Filtres
+              {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
           </div>
-
-          <FilterSelect
-            label="Catégorie"
-            options={categories}
-            value={selectedCategory}
-            onChange={setSelectedCategory}
-            icon={<Tag size={18} />}
-          />
-
-          <FilterSelect
-            label="Modèle"
-            options={models}
-            value={selectedModel}
-            onChange={setSelectedModel}
-            icon={<Tag size={18} />}
-          />
-
-          <FilterSelect
-            label="Service"
-            options={departments}
-            value={selectedDepartment}
-            onChange={setSelectedDepartment}
-            icon={<Building size={18} />}
-          />
-
-          <FilterSelect
-            label="Statut"
-            options={[
-              { _id: "operational", name: "Opérationnel" },
-              { _id: "down", name: "Hors service" }
-            ]}
-            value={selectedStatus}
-            onChange={setSelectedStatus}
-            icon={<CheckCircle size={18} />}
-          />
-
-          <FilterSelect
-            label="Garantie"
-            options={[
-              { _id: "valid", name: "Valid" },
-              { _id: "expired", name: "Expired" }
-            ]}
-            value={selectedWarranty}
-            onChange={setSelectedWarranty}
-            icon={<Shield size={18} />}
-          />
-
-          <FilterSelect
-            label="Fournisseur"
-            options={fournisseurs}
-            value={selectedFournisseur}
-            onChange={setSelectedFournisseur}
-            icon={<Truck size={18} />}
-          />
         </div>
+
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="p-4 border-t border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex flex-wrap gap-4">
+              <FilterSelect
+                label="Catégorie"
+                options={categories}
+                value={selectedCategory}
+                onChange={setSelectedCategory}
+                icon={<Tag size={16} />}
+              />
+
+              <FilterSelect
+                label="Modèle"
+                options={models}
+                value={selectedModel}
+                onChange={setSelectedModel}
+                icon={<Tag size={16} />}
+              />
+
+              <FilterSelect
+                label="Service"
+                options={departments}
+                value={selectedDepartment}
+                onChange={setSelectedDepartment}
+                icon={<Building size={16} />}
+              />
+
+              <FilterSelect
+                label="Statut"
+                options={[
+                  { _id: "operational", name: "Opérationnel" },
+                  { _id: "down", name: "Hors service" }
+                ]}
+                value={selectedStatus}
+                onChange={setSelectedStatus}
+                icon={<CheckCircle size={16} />}
+              />
+
+              <FilterSelect
+                label="Garantie"
+                options={[
+                  { _id: "valid", name: "Valid" },
+                  { _id: "expired", name: "Expired" }
+                ]}
+                value={selectedWarranty}
+                onChange={setSelectedWarranty}
+                icon={<Shield size={16} />}
+              />
+
+              <FilterSelect
+                label="Fournisseur"
+                options={fournisseurs}
+                value={selectedFournisseur}
+                onChange={setSelectedFournisseur}
+                icon={<Truck size={16} />}
+              />
+            </div>
+
+            {(selectedCategory || selectedModel || selectedDepartment || selectedStatus || selectedWarranty || selectedFournisseur) && (
+              <div className="mt-4 flex items-center gap-2">
+                <span className="text-sm text-gray-500">Filtres actifs:</span>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCategory && (
+                    <FilterChip
+                      label={`Catégorie: ${categories.find(c => c._id === selectedCategory)?.name}`}
+                      onRemove={() => setSelectedCategory("")}
+                    />
+                  )}
+                  {selectedModel && (
+                    <FilterChip
+                      label={`Modèle: ${models.find(m => m._id === selectedModel)?.name}`}
+                      onRemove={() => setSelectedModel("")}
+                    />
+                  )}
+                  {selectedDepartment && (
+                    <FilterChip
+                      label={`Service: ${departments.find(d => d._id === selectedDepartment)?.name}`}
+                      onRemove={() => setSelectedDepartment("")}
+                    />
+                  )}
+                  {selectedStatus && (
+                    <FilterChip
+                      label={`Statut: ${selectedStatus === "operational" ? "Opérationnel" : "Hors service"}`}
+                      onRemove={() => setSelectedStatus("")}
+                    />
+                  )}
+                  {selectedWarranty && (
+                    <FilterChip
+                      label={`Garantie: ${selectedWarranty === "valid" ? "Valid" : "Expired"}`}
+                      onRemove={() => setSelectedWarranty("")}
+                    />
+                  )}
+                  {selectedFournisseur && (
+                    <FilterChip
+                      label={`Fournisseur: ${fournisseurs.find(f => f._id === selectedFournisseur)?.name}`}
+                      onRemove={() => setSelectedFournisseur("")}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Equipment List */}
@@ -417,7 +486,6 @@ const Equipments = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Modèle</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">N° Série</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Service</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Statut</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Prix</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
@@ -439,15 +507,6 @@ const Equipments = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">{equipment.department?.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      equipment.status === 'operational' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>
-                      {equipment.status === 'operational' ? 'Opérationnel' : 'Hors service'}
-                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">{equipment.prix} TND</div>
@@ -522,25 +581,32 @@ const Equipments = () => {
 };
 
 // Reusable Components
+const FilterChip = ({ label, onRemove }) => (
+  <div className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm dark:bg-blue-900/30 dark:text-blue-400">
+    {label}
+    <button
+      onClick={onRemove}
+      className="hover:text-blue-900 dark:hover:text-blue-300"
+    >
+      <X className="w-3 h-3" />
+    </button>
+  </div>
+);
+
 const FilterSelect = ({ label, options, value, onChange, icon }) => (
-  <div className="relative">
-    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-      {label}
-    </label>
+  <div className="relative min-w-[180px]">
     <div className="relative">
       {icon && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
           {icon}
         </div>
       )}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-          icon ? 'pl-10' : 'pl-4'
-        }`}
+        className={`block w-full ${icon ? 'pl-8' : 'pl-3'} pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-800`}
       >
-        <option value="">Tous</option>
+        <option value="">{label}</option>
         {options.map((option) => (
           <option key={option._id} value={option._id}>
             {option.name}
@@ -829,7 +895,7 @@ const UpdateModal = ({ isOpen, onClose, onSave, formData, setFormData, errors, c
               Annuler
             </button>
             <button
-              type="submit"
+            type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Mettre à jour

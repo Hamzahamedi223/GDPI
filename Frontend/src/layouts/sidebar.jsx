@@ -30,12 +30,12 @@ const Sidebar = forwardRef(({ collapsed, setCollapsed }, ref) => {
         <aside
             ref={ref}
             className={cn(
-                "fixed left-0 top-0 z-50 h-screen w-64 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-800 border-r border-gray-200 dark:border-slate-700 transition-all duration-300",
+                "fixed left-0 top-0 z-50 h-screen w-64 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 transition-all duration-300",
                 collapsed ? "md:w-20 -translate-x-full md:translate-x-0" : "translate-x-0"
             )}
         >
             {/* Top Section */}
-            <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-slate-700">
+            <div className="flex items-center justify-between p-3 border-b border-gray-200">
                 <motion.div 
                     className="flex items-center gap-x-2"
                     whileHover={{ scale: 1.02 }}
@@ -53,7 +53,7 @@ const Sidebar = forwardRef(({ collapsed, setCollapsed }, ref) => {
                                 className="text-lg font-bold"
                             >
                                 <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">Medi</span>
-                                <span className="text-gray-800 dark:text-white">Tech</span>
+                                <span className="text-gray-800">Tech</span>
                             </motion.span>
                         )}
                     </AnimatePresence>
@@ -70,7 +70,7 @@ const Sidebar = forwardRef(({ collapsed, setCollapsed }, ref) => {
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                                    className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
                                 >
                                     {section.title}
                                 </motion.h3>
@@ -91,7 +91,7 @@ const Sidebar = forwardRef(({ collapsed, setCollapsed }, ref) => {
                                                 "group flex items-center gap-x-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                                                 isActive
                                                     ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/20"
-                                                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700"
+                                                    : "text-gray-600 hover:bg-gray-100"
                                             )}
                                         >
                                             <div className="relative">
@@ -99,7 +99,7 @@ const Sidebar = forwardRef(({ collapsed, setCollapsed }, ref) => {
                                                     size={18}
                                                     className={cn(
                                                         "flex-shrink-0 transition-transform duration-200",
-                                                        isActive ? "text-white" : "text-gray-500 dark:text-gray-400",
+                                                        isActive ? "text-white" : "text-gray-500",
                                                         !collapsed && "group-hover:scale-110"
                                                     )}
                                                 />

@@ -16,21 +16,16 @@ const Header = forwardRef(({ collapsed, setCollapsed }, ref) => {
     const navigate = useNavigate();
 
     const fetchUserData = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            console.error("No token found; user not authorized.");
+            return;
+        }
         try {
-            const token = localStorage.getItem("token");
-            if (!token) return;
-
-            const response = await axios.get('http://localhost:5000/api/profile/profile', {
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            const userData = JSON.parse(localStorage.getItem("user_data")) || {};
-            setUser({ ...userData, ...response.data });
-        } catch (error) {
-            console.error('Error fetching user data:', error);
+            const res = await axios.get("http://localhost:5000/api/profile/profile", { headers: { Authorization: "Bearer " + token } });
+            setUser(res.data);
+        } catch (err) {
+            console.error("Error fetching user data:", err);
         }
     };
 
@@ -74,7 +69,7 @@ const Header = forwardRef(({ collapsed, setCollapsed }, ref) => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setCollapsed(!collapsed)}
-                    className="btn-ghost size-10 rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-slate-800 ml-32"
+                    className="btn-ghost size-10 rounded-lg p-2 hover:bg-gray-100 ml-32"
                 >
                     <ChevronsLeft
                         size={20}
@@ -89,23 +84,13 @@ const Header = forwardRef(({ collapsed, setCollapsed }, ref) => {
                     <input
                         type="text"
                         placeholder="Search patients, appointments, reports..."
-                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-white transition-all duration-200"
+                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     />
                 </div>
             </div>
 
             {/* Right section */}
             <div className="flex items-center gap-x-2 md:gap-x-4">
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="btn-ghost size-10 relative"
-                    onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                >
-                    <Sun size={20} className="dark:hidden" />
-                    <Moon size={20} className="hidden dark:block" />
-                </motion.button>
-
                 <div className="relative">
                     <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -206,11 +191,7 @@ const Header = forwardRef(({ collapsed, setCollapsed }, ref) => {
                                         Profil
                                     </button>
 
-                                    <button className="w-full flex items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
-                                        <Settings size={16} />
-                                        Paramètres
-                                    </button>
-
+                                
                                     <button
                                         onClick={handleLogout}
                                         className="w-full flex items-center gap-x-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-slate-700"

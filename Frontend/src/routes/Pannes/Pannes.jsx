@@ -673,7 +673,7 @@ const PanneTypeModal = ({ types, onClose, onRefresh }) => {
                       className="w-4 h-4 rounded-full mr-3"
                       style={{ backgroundColor: type.color }}
                     />
-                    <div>
+    <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{type.name}</p>
                       {type.description && (
                         <p className="text-xs text-gray-500 dark:text-gray-400">{type.description}</p>

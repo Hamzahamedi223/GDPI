@@ -17,7 +17,6 @@ import Facture from "./routes/Facture/Facture";
 import Fournisseur from "./routes/Fournisseurs/fournisseur";
 import Model from "./routes/Model/Model";
 import Categorie from "./routes/Categorie/Categorie";
-import Devis from "./routes/Devis/Devis";
 import Settings from "./routes/Settings/Settings";
 import Landing from "./landing/Landing";
 import InternalRepair from "./routes/InternalRepair/InternalRepair";
@@ -28,7 +27,6 @@ import Reclamations from "./routes/Reclamations/Reclamations";
 import DepartmentReclamations from "./routes/DepartmentReclamations/DepartmentReclamations";
 import AddReclamation from "./routes/DepartmentReclamations/AddReclamation";
 import Besoins from "./routes/Besoins/Besoins";
-import Reformes from "./routes/Reformes/Reformes";
 import DeliveryOrders from "./routes/DeliveryOrders/DeliveryOrders";
 import DeliveryOrderDetails from "./routes/DeliveryOrderDetails/DeliveryOrderDetails";
 import InvoiceDetails from "./routes/InvoiceDetails/InvoiceDetails";
@@ -96,13 +94,11 @@ function App() {
             <Route path="/dashboard/delivery-order-details" element={<DeliveryOrderDetails />} />
             <Route path="/dashboard/facture" element={<Facture />} />
             <Route path="/dashboard/invoice-details" element={<InvoiceDetails />} />
-            <Route path="/dashboard/devis" element={<Devis />} />
             <Route path="/dashboard/fournisseur" element={<Fournisseur />} />
             <Route path="/dashboard/exit-forms" element={<ExitForm />} />
             <Route path="/dashboard/pannes" element={<Pannes />} />
             <Route path="/dashboard/reclamations" element={<Reclamations />} />
             <Route path="/dashboard/besoins" element={<Besoins />} />
-            <Route path="/dashboard/reformes" element={<Reformes />} />
             <Route path="/dashboard/service-inventory" element={<ServiceInventory />} />
             <Route path="/dashboard/assignment-history" element={<AssignmentHistory />} />
             <Route path="/dashboard/equipment-life" element={<EquipmentLife />} />

@@ -15,11 +15,6 @@ const EquipmentSchema = new mongoose.Schema({
     ref: "Model",
     required: [true, "Model reference is required"] 
   },
-  status: { 
-    type: String, 
-    enum: ["operational", "down"], 
-    default: "operational" 
-  },
   serial_number: { 
     type: String, 
     required: [true, "Serial number is required"],
