@@ -1,8 +1,28 @@
 const User = require("../models/Signup");
+const Department = require("../models/Department");
 
 exports.getAllUser = async (req, res) => {
  try {
     const users = await User.find().populate("role department");
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getUsersByDepartment = async (req, res) => {
+  try {
+    const { department } = req.params;
+    
+    // First, find the department by name
+    const departmentDoc = await Department.findOne({ name: department });
+    
+    if (!departmentDoc) {
+      return res.status(404).json({ message: "Department not found" });
+    }
+    
+    // Then find users with that department ID
+    const users = await User.find({ department: departmentDoc._id }).populate("role department");
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });

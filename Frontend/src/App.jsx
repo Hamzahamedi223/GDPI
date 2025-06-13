@@ -43,6 +43,7 @@ import DepartmentRequests from "./routes/DepartmentReclamations/DepartmentReques
 import AddBesoin from "./routes/DepartmentReclamations/AddBesoin";
 import DepartmentBesoins from "./routes/DepartmentReclamations/DepartmentBesoins";
 import DepartmentEquipment from "./routes/DepartmentReclamations/DepartmentEquipment";
+import DepartmentUsers from "./routes/DepartmentReclamations/DepartmentUsers";
 
 function App() {
   return (
@@ -76,6 +77,7 @@ function App() {
             <Route path="/department/:department/besoins" element={<DepartmentBesoins />} />
             <Route path="/department/:department/besoins/add" element={<AddBesoin />} />
             <Route path="/department/:department/equipment" element={<DepartmentEquipment />} />
+            <Route path="/department/:department/users" element={<DepartmentUsers />} />
           </Route>
 
           {/* Admin-only Routes */}

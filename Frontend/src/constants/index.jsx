@@ -111,6 +111,11 @@ import {
               icon: Package,
               path: `/department/${userDepartment}/besoins`,
             },
+            {
+              label: "Utilisateurs",
+              icon: Users,
+              path: `/department/${userDepartment}/users`,
+            },
           ] : []),
           {
             label: "Équipements du Service",
