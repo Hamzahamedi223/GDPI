@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { AlertCircle, Search, Filter } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Reclamations = () => {
   const [reclamations, setReclamations] = useState([]);
@@ -66,9 +67,11 @@ const Reclamations = () => {
       setReclamations(reclamations.map(reclamation => 
         reclamation._id === reclamationId ? response.data : reclamation
       ));
+      toast.success("Statut mis à jour avec succès");
     } catch (err) {
       console.error('Error updating reclamation status:', err);
       setError(err.response?.data?.message || "Erreur lors de la mise à jour du statut.");
+      toast.error("Erreur lors de la mise à jour du statut");
     }
   };
 

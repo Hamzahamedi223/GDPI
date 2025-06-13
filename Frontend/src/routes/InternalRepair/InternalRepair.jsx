@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Plus, AlertCircle, Tag, Calendar, CheckCircle, XCircle, Edit2, Trash2, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const InternalRepair = () => {
   const [repairs, setRepairs] = useState([]);
@@ -24,29 +25,81 @@ const InternalRepair = () => {
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [repairsRes, equipmentsRes, sparePartsRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/internal-repairs'),
-          axios.get('http://localhost:5000/api/equipment'),
-          axios.get('http://localhost:5000/api/spareParts')
-        ]);
-
-        console.log('Repairs data:', repairsRes.data);
-        console.log('Equipments data:', equipmentsRes.data);
-        console.log('SpareParts data:', sparePartsRes.data);
-
-        setRepairs(repairsRes.data);
-        setEquipments(equipmentsRes.data);
-        setSpareParts(sparePartsRes.data);
-      } catch (err) {
-        setError('Erreur lors du chargement des données');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Token d\'authentification manquant');
+        return;
+      }
+
+      const [repairsRes, pannesRes, sparePartsRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/internal-repairs'),
+        axios.get('http://localhost:5000/api/pannes', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        axios.get('http://localhost:5000/api/spareParts')
+      ]);
+
+      // Extract unique equipment from pannes
+      const equipmentFromPannes = pannesRes.data.reduce((acc, panne) => {
+        if (panne.equipment && !acc.find(eq => eq._id === panne.equipment._id)) {
+          acc.push(panne.equipment);
+        }
+        return acc;
+      }, []);
+
+      setRepairs(repairsRes.data);
+      setEquipments(equipmentFromPannes);
+      setSpareParts(sparePartsRes.data);
+    } catch (err) {
+      setError('Erreur lors du chargement des données');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Token d\'authentification manquant');
+        return;
+      }
+
+      const [repairsRes, pannesRes, sparePartsRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/internal-repairs'),
+        axios.get('http://localhost:5000/api/pannes', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        axios.get('http://localhost:5000/api/spareParts')
+      ]);
+
+      // Extract unique equipment from pannes
+      const equipmentFromPannes = pannesRes.data.reduce((acc, panne) => {
+        if (panne.equipment && !acc.find(eq => eq._id === panne.equipment._id)) {
+          acc.push(panne.equipment);
+        }
+        return acc;
+      }, []);
+
+      setRepairs(repairsRes.data);
+      setEquipments(equipmentFromPannes);
+      setSpareParts(sparePartsRes.data);
+    } catch (err) {
+      setError('Erreur lors du chargement des données');
+    }
+  };
 
   const validateForm = () => {
     const errors = {};
@@ -64,8 +117,7 @@ const InternalRepair = () => {
     if (!validateForm()) return;
 
     try {
-      const response = await axios.post('http://localhost:5000/api/internal-repairs', formData);
-      setRepairs([response.data, ...repairs]);
+      await axios.post('http://localhost:5000/api/internal-repairs', formData);
       setFormData({
         equipment: '',
         sparePart: '',
@@ -73,8 +125,11 @@ const InternalRepair = () => {
         repairDate: '',
         status: 'pending'
       });
+      await refreshData(); // Refresh data to get populated fields
+      toast.success('Réparation créée avec succès');
     } catch (err) {
       setError('Erreur lors de la création de la réparation');
+      toast.error('Erreur lors de la création de la réparation');
     }
   };
 
@@ -82,26 +137,28 @@ const InternalRepair = () => {
     if (!validateForm()) return;
 
     try {
-      const response = await axios.put(
+      await axios.put(
         `http://localhost:5000/api/internal-repairs/${selectedRepair._id}`,
         formData
       );
-      setRepairs(repairs.map(repair => 
-        repair._id === selectedRepair._id ? response.data : repair
-      ));
       setShowUpdateModal(false);
+      await refreshData(); // Refresh data to get populated fields
+      toast.success('Réparation mise à jour avec succès');
     } catch (err) {
       setError('Erreur lors de la mise à jour de la réparation');
+      toast.error('Erreur lors de la mise à jour de la réparation');
     }
   };
 
   const handleDelete = async () => {
     try {
       await axios.delete(`http://localhost:5000/api/internal-repairs/${selectedRepair._id}`);
-      setRepairs(repairs.filter(repair => repair._id !== selectedRepair._id));
       setShowDeleteModal(false);
+      await refreshData(); // Refresh data to ensure consistency
+      toast.success('Réparation supprimée avec succès');
     } catch (err) {
       setError('Erreur lors de la suppression de la réparation');
+      toast.error('Erreur lors de la suppression de la réparation');
     }
   };
 

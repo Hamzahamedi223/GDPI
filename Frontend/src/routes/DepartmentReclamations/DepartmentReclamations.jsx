@@ -3,6 +3,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { Plus, AlertCircle, FileQuestion, Search, Filter, Trash2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const DepartmentReclamations = () => {
   const { department } = useParams();
@@ -80,6 +81,7 @@ const DepartmentReclamations = () => {
       setReclamations(reclamations.filter(reclamation => reclamation._id !== selectedReclamation._id));
       setShowDeleteModal(false);
       setSelectedReclamation(null);
+      toast.success("Réclamation supprimée avec succès");
     } catch (err) {
       console.error('Error deleting reclamation:', err);
       setError(err.response?.data?.message || "Erreur lors de la suppression de la réclamation.");

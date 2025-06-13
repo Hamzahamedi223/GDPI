@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { AlertCircle, Search, Filter, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Besoins = () => {
   const [besoins, setBesoins] = useState([]);
@@ -68,9 +69,11 @@ const Besoins = () => {
       setBesoins(besoins.map(besoin => 
         besoin._id === besoinId ? response.data : besoin
       ));
+      toast.success("Statut mis à jour avec succès");
     } catch (err) {
       console.error('Error updating besoin status:', err);
       setError(err.response?.data?.message || "Erreur lors de la mise à jour du statut.");
+      toast.error("Erreur lors de la mise à jour du statut");
     }
   };
 
@@ -93,9 +96,11 @@ const Besoins = () => {
       setBesoins(besoins.filter(besoin => besoin._id !== selectedBesoin._id));
       setShowDeleteModal(false);
       setSelectedBesoin(null);
+      toast.success("Besoin supprimé avec succès");
     } catch (err) {
       console.error('Error deleting besoin:', err);
       setError(err.response?.data?.message || "Erreur lors de la suppression du besoin.");
+      toast.error("Erreur lors de la suppression du besoin");
     }
   };
 

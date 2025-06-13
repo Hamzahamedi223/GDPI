@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Plus, AlertCircle, Tag, Edit2, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -40,6 +41,7 @@ const Categories = () => {
       setCategories(categories.filter((cat) => cat._id !== categoryToDelete._id));
       setCategoryToDelete(null);
       setShowDeleteModal(false);
+      toast.success("Catégorie supprimée avec succès");
     } catch {
       setError("Erreur lors de la suppression de la catégorie");
     }
@@ -65,6 +67,7 @@ const Categories = () => {
       setCategoryToUpdate(null);
       setNewCategoryName("");
       setError("");
+      toast.success("Catégorie mise à jour avec succès");
     } catch {
       setError("Erreur lors de la mise à jour de la catégorie");
     }
@@ -94,6 +97,7 @@ const Categories = () => {
       setCategories([...categories, response.data.categorie]);
       setNewCategory("");
       setError("");
+      toast.success("Catégorie créée avec succès");
     } catch {
       setError("Erreur lors de la création de la catégorie");
     }

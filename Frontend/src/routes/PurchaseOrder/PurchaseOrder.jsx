@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Plus, AlertCircle, FileText, Calendar, Edit2, Trash2, Download, Filter } from "lucide-react";
+import toast from "react-hot-toast";
 
 const PurchaseOrder = () => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -48,7 +49,7 @@ const PurchaseOrder = () => {
     if (!formData.date) errors.date = "Date requise";
     if (!formData.fournisseur) errors.fournisseur = "Fournisseur requis";
     if (!formData.details) errors.details = "Détails requis";
-    if (!formData.document && !selectedOrder) errors.document = "Document requis";
+    if (!selectedOrder && !formData.document) errors.document = "Document requis";
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -96,14 +97,24 @@ const PurchaseOrder = () => {
         document: null,
         status: "pending"
       });
+
+      toast.success("Bon de commande créé avec succès");
     } catch (err) {
       console.error("Error creating purchase order:", err);
       setError(err.response?.data?.error || "Erreur lors de la création du bon de commande");
+      toast.error(err.response?.data?.error || "Erreur lors de la création du bon de commande");
     }
   };
 
   const handleUpdate = async () => {
-    if (!validateForm()) return;
+    console.log("Starting update process...");
+    console.log("Form data:", formData);
+    console.log("Selected order:", selectedOrder);
+    
+    if (!validateForm()) {
+      console.log("Validation failed");
+      return;
+    }
 
     try {
       const formDataToSend = new FormData();
@@ -116,6 +127,7 @@ const PurchaseOrder = () => {
         formDataToSend.append("document", formData.document);
       }
 
+      console.log("Sending update request...");
       await axios.put(
         `http://localhost:5000/api/purchase-orders/${selectedOrder._id}`,
         formDataToSend,
@@ -126,6 +138,7 @@ const PurchaseOrder = () => {
         }
       );
 
+      console.log("Update successful, fetching updated order...");
       // Fetch the updated purchase order with populated fournisseur
       const updatedOrder = await axios.get(`http://localhost:5000/api/purchase-orders/${selectedOrder._id}`);
 
@@ -133,9 +146,12 @@ const PurchaseOrder = () => {
         order._id === selectedOrder._id ? updatedOrder.data : order
       ));
       setShowUpdateModal(false);
+
+      toast.success("Bon de commande mis à jour avec succès");
     } catch (err) {
       console.error("Error updating purchase order:", err);
       setError(err.response?.data?.error || "Erreur lors de la mise à jour du bon de commande");
+      toast.error(err.response?.data?.error || "Erreur lors de la mise à jour du bon de commande");
     }
   };
 
@@ -144,12 +160,16 @@ const PurchaseOrder = () => {
       await axios.delete(`http://localhost:5000/api/purchase-orders/${selectedOrder._id}`);
       setPurchaseOrders(purchaseOrders.filter(order => order._id !== selectedOrder._id));
       setShowDeleteModal(false);
+
+      toast.success("Bon de commande supprimé avec succès");
     } catch (err) {
       setError("Erreur lors de la suppression du bon de commande");
+      toast.error("Erreur lors de la suppression du bon de commande");
     }
   };
 
   const openUpdateModal = (order) => {
+    console.log("Opening update modal for order:", order);
     setSelectedOrder(order);
     setFormData({
       reference: order.reference,
@@ -161,6 +181,7 @@ const PurchaseOrder = () => {
     });
     setFormErrors({});
     setShowUpdateModal(true);
+    console.log("Update modal should now be open");
   };
 
   const handleInputChange = (e) => {

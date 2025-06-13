@@ -3,6 +3,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertCircle, AlertTriangle, FileText, Hash } from "lucide-react";
+import toast from "react-hot-toast";
 
 const AddReclamation = () => {
   const [error, setError] = useState("");
@@ -43,9 +44,11 @@ const AddReclamation = () => {
         }
       );
 
+      toast.success("Réclamation créée avec succès");
       navigate(`/department/${department}/reclamations`);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Failed to create reclamation");
+      toast.error(err.response?.data?.message || err.message || "Erreur lors de la création de la réclamation");
     } finally {
       setLoading(false);
     }

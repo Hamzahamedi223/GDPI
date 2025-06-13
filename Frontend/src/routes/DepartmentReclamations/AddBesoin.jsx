@@ -3,6 +3,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertCircle, Package, Hash } from "lucide-react";
+import toast from "react-hot-toast";
 
 const AddBesoin = () => {
   const [error, setError] = useState("");
@@ -49,9 +50,11 @@ const AddBesoin = () => {
         }
       );
 
+      toast.success("Besoin créé avec succès");
       navigate(`/department/${department}/besoins`);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Failed to create besoin");
+      toast.error(err.response?.data?.message || err.message || "Erreur lors de la création du besoin");
     } finally {
       setLoading(false);
     }

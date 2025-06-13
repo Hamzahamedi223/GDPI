@@ -22,9 +22,11 @@ import {
   Clock,
   X
 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const DeliveryOrders = () => {
   const [deliveryOrders, setDeliveryOrders] = useState([]);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -63,8 +65,12 @@ const DeliveryOrders = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/delivery-orders");
-        setDeliveryOrders(response.data);
+        const [deliveryRes, purchaseRes] = await Promise.all([
+          axios.get("http://localhost:5000/api/delivery-orders"),
+          axios.get("http://localhost:5000/api/purchase-orders")
+        ]);
+        setDeliveryOrders(deliveryRes.data);
+        setPurchaseOrders(purchaseRes.data);
       } catch (err) {
         setError("Erreur lors du chargement des données");
       } finally {
@@ -103,8 +109,10 @@ const DeliveryOrders = () => {
       const response = await axios.post("http://localhost:5000/api/delivery-orders", orderData);
       setDeliveryOrders([response.data, ...deliveryOrders]);
       resetForm();
+      toast.success("Bon de livraison créé avec succès");
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de la création du bon de livraison");
+      toast.error(err.response?.data?.error || "Erreur lors de la création du bon de livraison");
     }
   };
 
@@ -126,8 +134,10 @@ const DeliveryOrders = () => {
         order._id === selectedOrder._id ? response.data : order
       ));
       setShowUpdateModal(false);
+      toast.success("Bon de livraison mis à jour avec succès");
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de la mise à jour du bon de livraison");
+      toast.error(err.response?.data?.error || "Erreur lors de la mise à jour du bon de livraison");
     }
   };
 
@@ -136,8 +146,10 @@ const DeliveryOrders = () => {
       await axios.delete(`http://localhost:5000/api/delivery-orders/${selectedOrder._id}`);
       setDeliveryOrders(deliveryOrders.filter(order => order._id !== selectedOrder._id));
       setShowDeleteModal(false);
+      toast.success("Bon de livraison supprimé avec succès");
     } catch (err) {
       setError("Erreur lors de la suppression du bon de livraison");
+      toast.error("Erreur lors de la suppression du bon de livraison");
     }
   };
 
@@ -420,14 +432,7 @@ const DeliveryOrders = () => {
               Gérez et suivez tous vos bons de livraison en un seul endroit
             </p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={20} />
-            <span>Nouveau Bon</span>
-          </motion.button>
+  
         </div>
 
         {/* Stats Cards */}
@@ -590,14 +595,32 @@ const DeliveryOrders = () => {
             error={formErrors.deliveryDate}
             icon={<Calendar size={18} />}
           />
-          <InputField
-            label="Référence"
-            name="reference"
-            value={formData.reference}
-            onChange={handleInputChange}
-            error={formErrors.reference}
-            icon={<FileText size={18} />}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Référence (Importée du Bon de Commande) {formErrors.reference && <span className="text-red-500">*</span>}
+            </label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <select
+                name="reference"
+                value={formData.reference}
+                onChange={handleInputChange}
+                className={`w-full rounded-lg border px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white pl-10 ${
+                  formErrors.reference ? 'border-red-500' : 'border-gray-200'
+                }`}
+              >
+                <option value="">Sélectionner une référence de bon de commande...</option>
+                {purchaseOrders.map(order => (
+                  <option key={order._id} value={order.reference}>
+                    {order.reference} - {order.fournisseur?.name || 'Fournisseur inconnu'}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {formErrors.reference && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.reference}</p>
+            )}
+          </div>
           <SelectInput
             label="Méthode de Paiement"
             value={formData.paymentMethod}
@@ -930,17 +953,6 @@ const DeliveryOrders = () => {
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                setSelectedOrder(order);
-                                setShowViewModal(true);
-                              }}
-                              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
-                            >
-                              <Eye size={18} />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
                               onClick={() => openUpdateModal(order)}
                               className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                             >
@@ -1002,6 +1014,7 @@ const DeliveryOrders = () => {
           onAddItem={addItem}
           onRemoveItem={removeItem}
           calculateTotal={calculateOrderTotal}
+          purchaseOrders={purchaseOrders}
         />
         )}
 
@@ -1107,7 +1120,7 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, item }) => isOpen && (
   </div>
 );
 
-const UpdateModal = ({ isOpen, onClose, onSave, data, errors, onChange, onItemChange, onAddItem, onRemoveItem, calculateTotal }) => isOpen && (
+const UpdateModal = ({ isOpen, onClose, onSave, data, errors, onChange, onItemChange, onAddItem, onRemoveItem, calculateTotal, purchaseOrders }) => isOpen && (
   <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -1241,14 +1254,32 @@ const UpdateModal = ({ isOpen, onClose, onSave, data, errors, onChange, onItemCh
               error={errors.deliveryDate}
               icon={<Calendar size={18} />}
             />
-            <InputField
-              label="Référence"
-              name="reference"
-              value={data.reference}
-              onChange={onChange}
-              error={errors.reference}
-              icon={<FileText size={18} />}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Référence (Importée du Bon de Commande) {errors.reference && <span className="text-red-500">*</span>}
+              </label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <select
+                  name="reference"
+                  value={data.reference}
+                  onChange={onChange}
+                  className={`w-full rounded-lg border px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-slate-800 dark:text-white pl-10 ${
+                    errors.reference ? 'border-red-500' : 'border-gray-200'
+                  }`}
+                >
+                  <option value="">Sélectionner une référence de bon de commande...</option>
+                  {purchaseOrders.map(order => (
+                    <option key={order._id} value={order.reference}>
+                      {order.reference} - {order.fournisseur?.name || 'Fournisseur inconnu'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {errors.reference && (
+                <p className="text-red-500 text-xs mt-1">{errors.reference}</p>
+              )}
+            </div>
             <SelectInput
               label="Méthode de Paiement"
               value={data.paymentMethod}

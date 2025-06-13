@@ -3,6 +3,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { Search, Filter, Plus, Trash2, AlertCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const DepartmentBesoins = () => {
   const [besoins, setBesoins] = useState([]);
@@ -64,6 +65,7 @@ const DepartmentBesoins = () => {
       setBesoins(besoins.filter((b) => b._id !== selectedBesoin._id));
       setShowDeleteModal(false);
       setSelectedBesoin(null);
+      toast.success("Besoins supprimé avec succès");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete besoin");
     }

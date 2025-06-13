@@ -24,7 +24,13 @@ exports.createInternalRepair = async (req, res) => {
 
   try {
     const newRepair = await repair.save();
-    res.status(201).json(newRepair);
+    
+    // Populate the created repair with equipment and spare part details
+    const populatedRepair = await InternalRepair.findById(newRepair._id)
+      .populate('equipment', 'name serial_number')
+      .populate('sparePart', 'name part_number');
+      
+    res.status(201).json(populatedRepair);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -33,19 +39,22 @@ exports.createInternalRepair = async (req, res) => {
 // Update internal repair
 exports.updateInternalRepair = async (req, res) => {
   try {
-    const repair = await InternalRepair.findById(req.params.id);
+    const repair = await InternalRepair.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    
     if (!repair) {
       return res.status(404).json({ message: 'Repair not found' });
     }
 
-    if (req.body.equipment) repair.equipment = req.body.equipment;
-    if (req.body.sparePart) repair.sparePart = req.body.sparePart;
-    if (req.body.description) repair.description = req.body.description;
-    if (req.body.repairDate) repair.repairDate = req.body.repairDate;
-    if (req.body.status) repair.status = req.body.status;
+    // Populate the updated repair with equipment and spare part details
+    const populatedRepair = await InternalRepair.findById(repair._id)
+      .populate('equipment', 'name serial_number')
+      .populate('sparePart', 'name part_number');
 
-    const updatedRepair = await repair.save();
-    res.json(updatedRepair);
+    res.json(populatedRepair);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -54,12 +63,11 @@ exports.updateInternalRepair = async (req, res) => {
 // Delete internal repair
 exports.deleteInternalRepair = async (req, res) => {
   try {
-    const repair = await InternalRepair.findById(req.params.id);
+    const repair = await InternalRepair.findByIdAndDelete(req.params.id);
     if (!repair) {
       return res.status(404).json({ message: 'Repair not found' });
     }
 
-    await repair.remove();
     res.json({ message: 'Repair deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });

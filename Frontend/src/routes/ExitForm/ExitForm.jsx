@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Plus, AlertCircle, FileText, Calendar, Edit2, Trash2, Download, Filter, X } from "lucide-react";
+import toast from "react-hot-toast";
 
 const ExitForm = () => {
   const [exitForms, setExitForms] = useState([]);
@@ -96,9 +97,11 @@ const ExitForm = () => {
       const response = await axios.post("http://localhost:5000/api/exit-forms", formDataToSend, { headers: { "Content-Type": "multipart/form-data", Authorization: "Bearer " + token } });
       setExitForms([response.data, ...exitForms]);
       setFormData({ reference: "", date: "", description: "", equipment: [], document: null, status: "pending" });
+      toast.success("Fiche de sortie créée avec succès");
     } catch (err) {
       console.error("Error creating exit form:", err);
       setError(err.response?.data?.error || "Erreur lors de la création de la fiche de sortie");
+      toast.error(err.response?.data?.error || "Erreur lors de la création de la fiche de sortie");
     }
   };
 
@@ -118,15 +121,17 @@ const ExitForm = () => {
       formDataToSend.append("equipment", JSON.stringify(formData.equipment));
       formDataToSend.append("status", formData.status);
       if (formData.document) {
-         formDataToSend.append("document", formData.document);
+        formDataToSend.append("document", formData.document);
       }
       await axios.put("http://localhost:5000/api/exit-forms/" + selectedForm._id, formDataToSend, { headers: { "Content-Type": "multipart/form-data", Authorization: "Bearer " + token } });
       const updatedForm = await axios.get("http://localhost:5000/api/exit-forms/" + selectedForm._id, { headers: { Authorization: "Bearer " + token } });
       setExitForms(exitForms.map(form => (form._id === selectedForm._id ? updatedForm.data : form)));
       setShowUpdateModal(false);
+      toast.success("Fiche de sortie mise à jour avec succès");
     } catch (err) {
       console.error("Error updating exit form:", err);
       setError(err.response?.data?.error || "Erreur lors de la mise à jour de la fiche de sortie");
+      toast.error(err.response?.data?.error || "Erreur lors de la mise à jour de la fiche de sortie");
     }
   };
 
@@ -135,8 +140,10 @@ const ExitForm = () => {
       await axios.delete(`http://localhost:5000/api/exit-forms/${selectedForm._id}`);
       setExitForms(exitForms.filter(form => form._id !== selectedForm._id));
       setShowDeleteModal(false);
+      toast.success("Fiche de sortie supprimée avec succès");
     } catch (err) {
       setError("Erreur lors de la suppression de la fiche de sortie");
+      toast.error("Erreur lors de la suppression de la fiche de sortie");
     }
   };
 

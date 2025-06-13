@@ -267,6 +267,9 @@ const Profile = () => {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   {user?.username || 'User'}
                 </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">Role:  
+                  {user?.role?.name || 'No Role'}
+                </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Update your profile picture
                 </p>

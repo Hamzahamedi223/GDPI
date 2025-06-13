@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Plus, AlertCircle, Tag, Building, Calendar, DollarSign, CheckCircle, XCircle, Edit2, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const api = axios.create({ baseURL: 'http://localhost:5000/api' });
 
@@ -89,8 +90,10 @@ export default function Piece() {
       };
       setSpareParts([created, ...spareParts]);
       resetForm();
+      toast.success('Pièce créée avec succès');
     } catch (e) {
       setError('Creation failed.');
+      toast.error('Erreur lors de la création de la pièce');
     }
   };
 
@@ -149,9 +152,11 @@ export default function Piece() {
       setShowUpdateModal(false);
       resetForm();
       setSelectedPart(null);
+      toast.success('Pièce mise à jour avec succès');
     } catch (err) {
       console.error('Update Error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'Update failed.');
+      toast.error('Erreur lors de la mise à jour de la pièce');
     }
   };
 
@@ -166,8 +171,10 @@ export default function Piece() {
       setSpareParts(spareParts.filter(p => p._id !== selectedPart._id));
       setShowDeleteModal(false);
       setSelectedPart(null);
+      toast.success('Pièce supprimée avec succès');
     } catch (e) {
       setError('Delete failed.');
+      toast.error('Erreur lors de la suppression de la pièce');
     }
   };
 

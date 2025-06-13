@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Plus, Shield, Edit2, Trash2, AlertCircle } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Roles = () => {
   const [roles, setRoles] = useState([]);
@@ -40,8 +41,10 @@ const Roles = () => {
       setRoles(roles.filter(role => role._id !== roleToDelete._id));
       setRoleToDelete(null);
       setShowDeleteModal(false);
+      toast.success("Rôle supprimé avec succès");
     } catch {
       setError("Erreur lors de la suppression du rôle");
+      toast.error("Erreur lors de la suppression du rôle");
     }
   };
 
@@ -65,8 +68,10 @@ const Roles = () => {
       setRoleToUpdate(null);
       setNewRoleName("");
       setError("");
+      toast.success("Rôle mis à jour avec succès");
     } catch {
       setError("Erreur lors de la mise à jour du rôle");
+      toast.error("Erreur lors de la mise à jour du rôle");
     }
   };
 
@@ -94,8 +99,10 @@ const Roles = () => {
       setRoles([...roles, response.data.role]);
       setNewRole("");
       setError("");
+      toast.success("Rôle créé avec succès");
     } catch {
       setError("Erreur lors de la création du rôle");
+      toast.error("Erreur lors de la création du rôle");
     }
   };
 

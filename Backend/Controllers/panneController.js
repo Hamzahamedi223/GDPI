@@ -40,10 +40,10 @@ exports.getDepartmentPannes = async (req, res) => {
       return res.status(404).json({ message: 'Department not found' });
     }
 
-    // Check if user belongs to the department
-    if (!req.user.department || req.user.department.name !== department) {
-      return res.status(403).json({ message: 'You can only view pannes from your department' });
-    }
+    // Remove department restriction - users can now view pannes from any department
+    // if (!req.user.department || req.user.department.name !== department) {
+    //   return res.status(403).json({ message: 'You can only view pannes from your department' });
+    // }
 
     const pannes = await Panne.find({ department: departmentDoc._id })
       .populate('equipment', 'name serial_number')
@@ -87,10 +87,10 @@ exports.createPanne = async (req, res) => {
       return res.status(400).json({ message: 'Equipment must be assigned to a department' });
     }
 
-    // Check if user belongs to the department
-    if (!req.user.department || req.user.department._id.toString() !== equipmentDoc.department._id.toString()) {
-      return res.status(403).json({ message: 'You can only create pannes for equipment in your department' });
-    }
+    // Remove department restriction - users can now create pannes for any equipment
+    // if (!req.user.department || req.user.department._id.toString() !== equipmentDoc.department._id.toString()) {
+    //   return res.status(403).json({ message: 'You can only create pannes for equipment in your department' });
+    // }
 
     const panne = new Panne({
       equipment,
@@ -173,10 +173,10 @@ exports.updatePanne = async (req, res) => {
       return res.status(200).json(updatedPanne);
     }
 
-    // For non-admin users, check if they belong to the department
-    if (!req.user.department || req.user.department.name !== panne.department.name) {
-      return res.status(403).json({ message: 'You can only update pannes from your department' });
-    }
+    // Remove department restriction - users can now update pannes from any department
+    // if (!req.user.department || req.user.department.name !== panne.department.name) {
+    //   return res.status(403).json({ message: 'You can only update pannes from your department' });
+    // }
 
     const updatedPanne = await Panne.findByIdAndUpdate(
       id,
@@ -217,10 +217,10 @@ exports.deletePanne = async (req, res) => {
       return res.status(200).json({ message: 'Panne deleted successfully' });
     }
 
-    // For non-admin users, check if they belong to the department
-    if (!req.user.department || req.user.department.name !== panne.department.name) {
-      return res.status(403).json({ message: 'You can only delete pannes from your department' });
-    }
+    // Remove department restriction - users can now delete pannes from any department
+    // if (!req.user.department || req.user.department.name !== panne.department.name) {
+    //   return res.status(403).json({ message: 'You can only delete pannes from your department' });
+    // }
 
     await Panne.findByIdAndDelete(id);
     res.status(200).json({ message: 'Panne deleted successfully' });

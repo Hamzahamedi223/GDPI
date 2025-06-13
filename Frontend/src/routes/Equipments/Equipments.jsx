@@ -20,6 +20,7 @@ import {
   ChevronUp,
   X
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Equipments = () => {
   // State for equipment list and filters
@@ -126,6 +127,8 @@ const Equipments = () => {
   const totalPrice = filteredEquipments.reduce((sum, eq) => sum + (parseFloat(eq.prix) || 0), 0);
   const operationalCount = filteredEquipments.filter(eq => eq.status === "operational").length;
   const outOfServiceCount = filteredEquipments.filter(eq => eq.status === "down").length;
+  const validWarrantyCount = filteredEquipments.filter(eq => eq.warranty_status === "valid").length;
+  const expiredWarrantyCount = filteredEquipments.filter(eq => eq.warranty_status === "expired").length;
   const totalProducts = filteredEquipments.length;
 
   const validateForm = (formData) => {
@@ -172,8 +175,10 @@ const Equipments = () => {
         fournisseur: "",
         prix: "",
       });
+      toast.success("Équipement créé avec succès");
     } catch (err) {
       setError("Erreur lors de l'ajout de l'équipement");
+      toast.error(err.response?.data?.message || "Erreur lors de l'ajout de l'équipement");
     }
   };
 
@@ -192,8 +197,10 @@ const Equipments = () => {
         eq._id === selectedEquipment._id ? populatedResponse.data : eq
       ));
       setShowUpdateModal(false);
+      toast.success("Équipement mis à jour avec succès");
     } catch (err) {
       setError("Erreur lors de la mise à jour de l'équipement");
+      toast.error(err.response?.data?.message || "Erreur lors de la mise à jour de l'équipement");
     }
   };
 
@@ -202,8 +209,10 @@ const Equipments = () => {
       await axios.delete(`http://localhost:5000/api/equipment/${selectedEquipment._id}`);
       setEquipments(equipments.filter(eq => eq._id !== selectedEquipment._id));
       setShowDeleteModal(false);
+      toast.success("Équipement supprimé avec succès");
     } catch (err) {
       setError("Erreur lors de la suppression de l'équipement");
+      toast.error(err.response?.data?.message || "Erreur lors de la suppression de l'équipement");
     }
   };
 
@@ -486,6 +495,8 @@ const Equipments = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Modèle</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">N° Série</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Service</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Statut</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Garantie</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Prix</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
@@ -507,6 +518,30 @@ const Equipments = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">{equipment.department?.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      equipment.status === 'operational' 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      {equipment.status === 'operational' ? (
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                      ) : (
+                        <XCircle className="w-3 h-3 mr-1" />
+                      )}
+                      {equipment.status === 'operational' ? 'Opérationnel' : 'Hors service'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      equipment.warranty_status === 'valid' 
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                    }`}>
+                      <Shield className="w-3 h-3 mr-1" />
+                      {equipment.warranty_status === 'valid' ? 'Valide' : 'Expirée'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">{equipment.prix} TND</div>

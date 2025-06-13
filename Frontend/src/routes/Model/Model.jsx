@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Plus, AlertCircle, Box, Edit2, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Models = () => {
   const [models, setModels] = useState([]);
@@ -40,8 +41,10 @@ const Models = () => {
       setModels(models.filter((model) => model._id !== modelToDelete._id));
       setModelToDelete(null);
       setShowDeleteModal(false);
+      toast.success("Modèle supprimé avec succès");
     } catch {
       setError("Erreur lors de la suppression du modèle");
+      toast.error("Erreur lors de la suppression du modèle");
     }
   };
 
@@ -65,8 +68,10 @@ const Models = () => {
       setModelToUpdate(null);
       setNewModelName("");
       setError("");
+      toast.success("Modèle mis à jour avec succès");
     } catch {
       setError("Erreur lors de la mise à jour du modèle");
+      toast.error("Erreur lors de la mise à jour du modèle");
     }
   };
 
@@ -94,8 +99,10 @@ const Models = () => {
       setModels([...models, response.data.model]);
       setNewModel("");
       setError("");
+      toast.success("Modèle créé avec succès");
     } catch {
       setError("Erreur lors de la création du modèle");
+      toast.error("Erreur lors de la création du modèle");
     }
   };
 

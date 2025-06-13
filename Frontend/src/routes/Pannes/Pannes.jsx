@@ -13,6 +13,7 @@ import {
   Settings
 } from 'lucide-react';
 import * as panneService from '../../services/panneService';
+import toast from 'react-hot-toast';
 
 const Pannes = () => {
   const [pannes, setPannes] = useState([]);
@@ -95,8 +96,10 @@ const Pannes = () => {
       setPannes(pannes.map(p => p._id === id ? updated : p));
       setShowUpdateModal(false);
       setSelectedPanne(null);
+      toast.success('Panne updated successfully');
     } catch (err) {
       setError('Failed to update panne');
+      toast.error('Failed to update panne');
       console.error('Error updating panne:', err);
     }
   };
@@ -107,8 +110,10 @@ const Pannes = () => {
     try {
       await panneService.deletePanne(id);
       setPannes(pannes.filter(p => p._id !== id));
+      toast.success('Panne deleted successfully');
     } catch (err) {
       setError('Failed to delete panne');
+      toast.error('Failed to delete panne');
       console.error('Error deleting panne:', err);
     }
   };
@@ -173,8 +178,10 @@ const Pannes = () => {
       setPannes([newPanne, ...pannes]);
       setShowCreateModal(false);
       setError(''); // Clear any previous errors
+      toast.success('Panne created successfully');
     } catch (err) {
       setError(err.message || 'Failed to create panne');
+      toast.error(err.message || 'Failed to create panne');
       console.error('Error creating panne:', err);
     }
   };

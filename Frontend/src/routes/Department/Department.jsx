@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Plus, AlertCircle, Building, Edit2, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Department = () => {
   const [departments, setDepartments] = useState([]);
@@ -35,8 +36,10 @@ const Department = () => {
       setDepartments(departments.filter((dept) => dept._id !== selectedDept._id));
       setShowDeleteModal(false);
       setSelectedDept(null);
+      toast.success("Service supprimé avec succès");
     } catch (err) {
       setError("Erreur lors de la suppression du Service.");
+      toast.error(err.response?.data?.message || "Erreur lors de la suppression du Service.");
     }
   };
 
@@ -60,8 +63,10 @@ const Department = () => {
       setSelectedDept(null);
       setNewName("");
       setError("");
+      toast.success("Service mis à jour avec succès");
     } catch (err) {
       setError("Erreur lors de la mise à jour du Service.");
+      toast.error(err.response?.data?.message || "Erreur lors de la mise à jour du Service.");
     }
   };
 
@@ -88,8 +93,10 @@ const Department = () => {
       setDepartments([...departments, response.data.department]);
       setNewDepartment("");
       setError("");
+      toast.success("Service créé avec succès");
     } catch (err) {
       setError("Erreur lors de la création du Service.");
+      toast.error(err.response?.data?.message || "Erreur lors de la création du Service.");
     }
   };
 

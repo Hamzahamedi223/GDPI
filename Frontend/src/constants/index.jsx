@@ -63,67 +63,61 @@ import {
     const user = getCurrentUser();
     const isAdmin = user?.role?.name === "admin";
     const isChefService = user?.role?.name === "chef service";
+    const isUser = user?.role?.name === "user";
     const userDepartment = user?.department?.name;
   
-    // Common links for all users
-    const commonLinks = [
-      ...(isAdmin ? [
-        {
-          title: "Tableau de Bord",
-          links: [
-            {
-              label: "Tableau de Bord",
-              icon: Home,
-              path: "/dashboard/dashboard",
-            },
-            {
-              label: "Analytique",
-              icon: ChartColumn,
-              path: "/dashboard/analytics",
-            },
-          ],
-        },
-      ] : []),
-      ...(isAdmin ? [
-        {
-          title: "Support",
-          links: [
-            {
-              label: "Chat Support",
-              icon: MessageCircle,
-              path: "/dashboard/support-chat",
-            },
-          ],
-        },
-      ] : []),
-    ];
-
-    // Department-specific links for chef service
-    const departmentLinks = isChefService ? [
+    // Common links for all users - only admin gets dashboard
+    const commonLinks = isAdmin ? [
       {
-          title: "Gestion des Demandes",
-          links: [
-              {
-                  label: "Réclamations",
-                  icon: FileQuestion,
-                  path: `/department/${userDepartment}/reclamations`,
-              },
-              {
-                  label: "Besoins",
-                  icon: Package,
-                  path: `/department/${userDepartment}/besoins`,
-              },
-          ],
+        title: "Tableau de Bord",
+        links: [
+          {
+            label: "Tableau de Bord",
+            icon: Home,
+            path: "/dashboard/dashboard",
+          },
+          {
+            label: "Analytique",
+            icon: ChartColumn,
+            path: "/dashboard/analytics",
+          },
+        ],
       },
       {
-          title: "Gestion des Équipements",
-          links: [
-              {
-                  label: "Équipements du Service",
-                  icon: Package,
-                  path: `/department/${userDepartment}/equipment`,
-              },
-          ],
+        title: "Support",
+        links: [
+          {
+            label: "Chat Support",
+            icon: MessageCircle,
+            path: "/dashboard/support-chat",
+          },
+        ],
+      },
+    ] : [];
+
+    // Department-specific links for chef service and user roles
+    const departmentLinks = (isChefService || isUser) ? [
+      {
+        title: "Gestion des Demandes",
+        links: [
+          ...(isChefService ? [
+            {
+              label: "Réclamations",
+              icon: FileQuestion,
+              path: `/department/${userDepartment}/reclamations`,
+            },
+            {
+              label: "Besoins",
+              icon: Package,
+              path: `/department/${userDepartment}/besoins`,
+            },
+          ] : []),
+          {
+            label: "Équipements du Service",
+            icon: Package,
+            path: `/department/${userDepartment}/equipment`,
+          },
+        ],
       },
     ] : [];
 
@@ -295,7 +289,12 @@ import {
     //   },
     ] : [];
 
-    // Combine all links
+    // For regular users, only show their department-specific links
+    if (isUser) {
+      return departmentLinks;
+    }
+
+    // For admin and chef service, combine appropriate links
     const allLinks = [
     ...commonLinks,
       ...(isChefService ? departmentLinks : []),

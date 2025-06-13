@@ -15,6 +15,7 @@ import {
     Building
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 
 const User = () => {
     const [users, setUsers] = useState([]);
@@ -70,8 +71,10 @@ const User = () => {
             await axios.delete(`http://localhost:5000/api/Users/${selectedUser._id}`);
             setUsers(users.filter(user => user._id !== selectedUser._id));
             setShowDeleteModal(false);
+            toast.success("Utilisateur supprimé avec succès");
         } catch (err) {
             setError("Erreur lors de la suppression de l'utilisateur");
+            toast.error(err.response?.data?.message || "Erreur lors de la suppression de l'utilisateur");
         }
     };
 
@@ -112,8 +115,10 @@ const User = () => {
             
             setShowUpdateModal(false);
             setFormErrors({});
+            toast.success("Utilisateur mis à jour avec succès");
         } catch (err) {
             setError("Erreur lors de la mise à jour de l'utilisateur");
+            toast.error(err.response?.data?.message || "Erreur lors de la mise à jour de l'utilisateur");
         }
     };
 
