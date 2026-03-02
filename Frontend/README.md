@@ -83,3 +83,43 @@ npm run dev
 [![ko-fi](https://img.shields.io/static/v1?message=Support%20me%20on%20ko-fi&logo=kofi&label=&color=ff5e5b&logoColor=white&labelColor=&style=for-the-badge)](https://ko-fi.com/J3J1NMYT7)
 
 [![youtube](https://img.shields.io/static/v1?message=Subscribe&logo=youtube&label=&color=FF0000&logoColor=white&labelColor=&style=for-the-badge)](https://www.youtube.com/@_xdcode_ "XD Code")
+
+## 🖥️ Run this project as an Electron desktop app (with local data)
+
+A lightweight Electron shell is included in `Frontend/electron`.
+
+### 1) Install dependencies
+
+```bash
+npm install
+```
+
+### 2) Start desktop dev mode
+
+```bash
+npm run electron:dev
+```
+
+This starts Vite and opens Electron with your React app.
+
+### 3) Build desktop binaries
+
+```bash
+npm run electron:build
+```
+
+### Local data access from the renderer
+
+Use `src/lib/desktopStore.js` in your React components. It automatically:
+
+- Uses Electron IPC + `electron-store` in desktop mode.
+- Falls back to browser `localStorage` when running in web mode.
+
+Example:
+
+```js
+import { desktopStore } from './src/lib/desktopStore';
+
+await desktopStore.addRecord({ name: 'Laptop', owner: 'IT' });
+const all = await desktopStore.getAllRecords();
+```
