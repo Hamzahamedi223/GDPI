@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm install *)",
+      "PowerShell(npm run *)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(node --check server.js)"
+    ]
+  }
+}
