@@ -4,7 +4,10 @@
       "PowerShell(npm install *)",
       "PowerShell(npm run *)",
       "PowerShell(Remove-Item *)",
-      "PowerShell(node --check server.js)"
+      "PowerShell(node --check server.js)",
+      "WebSearch",
+      "Bash(powershell -Command \"Test-NetConnection -ComputerName 127.0.0.1 -Port 27017 -InformationLevel Quiet\" 2>&1)",
+      "Bash(node scripts/seed-network-equipment.js)"
     ]
   }
 }

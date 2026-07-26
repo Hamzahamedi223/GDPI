@@ -24,10 +24,15 @@ const EquipmentSchema = new mongoose.Schema({
     type: Date, 
     required: [true, "Purchase date is required"] 
   },
-  warranty_status: { 
-    type: String, 
-    enum: ["valid", "expired"], 
-    default: "valid" 
+  warranty_status: {
+    type: String,
+    enum: ["valid", "expired"],
+    default: "valid"
+  },
+  status: {
+    type: String,
+    enum: ["operational", "down"],
+    default: "operational"
   },
   department: { 
     type: mongoose.Schema.Types.ObjectId, 
